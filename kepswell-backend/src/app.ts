@@ -11,17 +11,23 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const ALLOWED_ORIGINS = [
-    ENV.FRONTEND_URL,
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3000',
-];
+const VERCEL_PATTERN = /^https:\/\/kepswell.*\.vercel\.app$/;
+
+const isAllowedOrigin = (origin: string): boolean => {
+    if (!origin) return false;
+    // Localhost dev
+    if (['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'].includes(origin)) return true;
+    // URL production statis dari env
+    if (ENV.FRONTEND_URL && origin === ENV.FRONTEND_URL) return true;
+    // Semua preview/production URL Vercel milik project ini
+    if (VERCEL_PATTERN.test(origin)) return true;
+    return false;
+};
 
 app.use((req, res, next) => {
     const origin = req.headers.origin || '';
-    if (ALLOWED_ORIGINS.includes(origin) || ENV.NODE_ENV === 'development') {
-        res.header('Access-Control-Allow-Origin',  origin || '*');
+    if (isAllowedOrigin(origin) || ENV.NODE_ENV === 'development') {
+        res.header('Access-Control-Allow-Origin', origin || '*');
     }
     res.header('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
