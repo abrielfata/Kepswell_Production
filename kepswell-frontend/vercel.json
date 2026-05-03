@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "description": "React Router SPA handling",
+      "destination": "/index.html"
+    }
+  ]
+}
