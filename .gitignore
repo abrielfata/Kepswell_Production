@@ -1,0 +1,23 @@
+# Dependencies
+kepswell-backend/node_modules/
+kepswell-frontend/node_modules/
+
+# Build output
+kepswell-backend/dist/
+
+# Environment files (JANGAN push ke GitHub!)
+kepswell-backend/.env
+kepswell-frontend/.env
+# .env.production boleh di-push jika tidak ada secret
+# kepswell-frontend/.env.production
+
+# Temporary files
+kepswell-backend/temp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
