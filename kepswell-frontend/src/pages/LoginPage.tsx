@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, TextField, Button, Typography, Alert, CircularProgress } from '@mui/material';
+import { Box, TextField, Button, Typography, Alert, CircularProgress, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,7 +20,7 @@ export default function LoginPage() {
             await login(email, password);
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Email atau password salah');
+            setError(err.response?.data?.message || 'Email atau password tidak valid');
         } finally {
             setLoading(false);
         }
@@ -28,47 +28,77 @@ export default function LoginPage() {
 
     return (
         <Box sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: '#f7f8fa',
+            minHeight: '100vh', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            bgcolor: '#f8f9fb',
         }}>
-            <Box sx={{
-                width: '100%', maxWidth: 360,
-                bgcolor: '#ffffff',
-                border: '1px solid #e5e7eb',
-                borderRadius: 2,
-                p: 4,
-            }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '1.2rem', color: '#111827', mb: 0.5 }}>
-                    Kepswell
-                </Typography>
-                <Typography sx={{ fontSize: '0.85rem', color: '#6b7280', mb: 3 }}>
-                    Masuk ke akun manager Anda
-                </Typography>
-
-                {error && <Alert severity="error" sx={{ mb: 2, fontSize: '0.82rem' }}>{error}</Alert>}
-
-                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField
-                        label="Email" type="email" size="small"
-                        value={email} onChange={e => setEmail(e.target.value)}
-                        required fullWidth
-                    />
-                    <TextField
-                        label="Password" type="password" size="small"
-                        value={password} onChange={e => setPassword(e.target.value)}
-                        required fullWidth
-                    />
-                    <Button
-                        type="submit" variant="contained" fullWidth
-                        disabled={loading}
-                        sx={{ mt: 0.5, py: 1.1, fontWeight: 600 }}
-                    >
-                        {loading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Masuk'}
-                    </Button>
+            <Box sx={{ width: '100%', maxWidth: 360 }}>
+                {/* Header */}
+                <Box sx={{ mb: 3, textAlign: 'center' }}>
+                    <Box sx={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 40, height: 40, borderRadius: 2,
+                        bgcolor: '#2563EB', mb: 2,
+                    }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>K</Typography>
+                    </Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#1a1d23' }}>
+                        Masuk ke Kepswell
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.82rem', color: '#6b7280', mt: 0.5 }}>
+                        Live Session Reporting System
+                    </Typography>
                 </Box>
+
+                {/* Card */}
+                <Box sx={{
+                    bgcolor: '#fff', border: '1px solid #e5e7eb',
+                    borderRadius: '10px', p: 3,
+                }}>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+                    )}
+
+                    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Box>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#374151', mb: 0.75 }}>
+                                Email
+                            </Typography>
+                            <TextField
+                                type="email" placeholder="manager@kepswell.com"
+                                value={email} onChange={e => setEmail(e.target.value)}
+                                required fullWidth
+                            />
+                        </Box>
+                        <Box>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#374151', mb: 0.75 }}>
+                                Password
+                            </Typography>
+                            <TextField
+                                type="password" placeholder="••••••••"
+                                value={password} onChange={e => setPassword(e.target.value)}
+                                required fullWidth
+                            />
+                        </Box>
+
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <Button
+                            type="submit" variant="contained" fullWidth
+                            disabled={loading}
+                            sx={{ py: 1.1, fontWeight: 600, fontSize: '0.875rem' }}
+                        >
+                            {loading
+                                ? <CircularProgress size={16} sx={{ color: '#fff' }} />
+                                : 'Masuk'
+                            }
+                        </Button>
+                    </Box>
+                </Box>
+
+                <Typography sx={{ textAlign: 'center', mt: 3, fontSize: '0.72rem', color: '#9ca3af' }}>
+                    Kepswell &copy; {new Date().getFullYear()} &mdash; Hanya untuk Manager
+                </Typography>
             </Box>
         </Box>
     );
