@@ -5,7 +5,7 @@ import {
     Chip, Button, Dialog, DialogTitle, DialogContent,
     DialogActions, TextField, IconButton, Tooltip, Alert
 } from '@mui/material';
-import { ContentCopy, Refresh } from '@mui/icons-material';
+import { ContentCopy, Check, Refresh } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hostsAPI } from '../api/hosts';
 import type { Host } from '../types';
@@ -14,18 +14,18 @@ import { formatDate } from '../utils/format';
 export default function HostsPage() {
     const [createOpen, setCreateOpen]   = useState(false);
     const [fullName, setFullName]       = useState('');
-    const [copiedToken, setCopiedToken] = useState<string | null>(null);
+    const [copiedId, setCopiedId]       = useState<number | null>(null);
 
     const queryClient = useQueryClient();
 
     const { data: hosts = [] } = useQuery({
         queryKey: ['hosts'],
-        queryFn: () => hostsAPI.getAll().then(r => r.data.data as Host[]),
+        queryFn:  () => hostsAPI.getAll().then(r => r.data.data as Host[]),
     });
 
     const { mutate: createHost, isPending: creating } = useMutation({
         mutationFn: () => hostsAPI.create({ full_name: fullName }),
-        onSuccess: () => {
+        onSuccess:  () => {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             setCreateOpen(false);
             setFullName('');
@@ -34,112 +34,118 @@ export default function HostsPage() {
 
     const { mutate: toggleStatus } = useMutation({
         mutationFn: (id: number) => hostsAPI.toggleStatus(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
+        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
     });
 
     const { mutate: regenerateToken } = useMutation({
         mutationFn: (id: number) => hostsAPI.regenerateToken(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
+        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
     });
 
     const { mutate: deleteHost } = useMutation({
         mutationFn: (id: number) => hostsAPI.delete(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
+        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
     });
 
-    const copyToken = (token: string) => {
-        navigator.clipboard.writeText(`/bind ${token}`);
-        setCopiedToken(token);
-        setTimeout(() => setCopiedToken(null), 2000);
+    const copyToken = (host: Host) => {
+        navigator.clipboard.writeText(`/bind ${host.binding_token}`);
+        setCopiedId(host.id);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>Hosts</Typography>
-                <Button variant="contained" onClick={() => setCreateOpen(true)}>
-                    Add Host
+            {/* Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3 }}>
+                <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: '1.15rem', color: '#1a1d23' }}>Host</Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#6b7280', mt: 0.25 }}>
+                        Kelola akun host dan token binding Telegram
+                    </Typography>
+                </Box>
+                <Button variant="contained" onClick={() => setCreateOpen(true)} sx={{ px: 2 }}>
+                    Tambah Host
                 </Button>
             </Box>
 
-            <Alert severity="info" sx={{ mb: 2 }}>
-                Setelah host dibuat, copy binding token dan kirimkan ke host.
-                Host ketik <b>/bind TOKEN</b> di Telegram Bot untuk menghubungkan akun.
+            {/* Info */}
+            <Alert severity="info" sx={{ mb: 2.5 }}>
+                Setelah host dibuat, salin token binding dan kirimkan ke host.
+                Host ketik <strong>/bind TOKEN</strong> di Telegram Bot untuk menghubungkan akun.
             </Alert>
 
+            {/* Table */}
             <Card>
                 <CardContent sx={{ p: 0 }}>
                     <TableContainer component={Paper} elevation={0}>
-                        <Table size="small">
+                        <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>ID</TableCell>
-                                    <TableCell>Name</TableCell>
+                                    <TableCell>Nama</TableCell>
                                     <TableCell>Telegram</TableCell>
                                     <TableCell>Binding Token</TableCell>
                                     <TableCell>Status</TableCell>
-                                    <TableCell>Created</TableCell>
-                                    <TableCell>Actions</TableCell>
+                                    <TableCell>Dibuat</TableCell>
+                                    <TableCell>Aksi</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {hosts.map(host => (
                                     <TableRow key={host.id}>
-                                        <TableCell>#{host.id}</TableCell>
-                                        <TableCell>{host.full_name}</TableCell>
+                                        <TableCell>
+                                            <Typography sx={{ fontWeight: 500, fontSize: '0.85rem' }}>{host.full_name}</Typography>
+                                            <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>#{host.id}</Typography>
+                                        </TableCell>
                                         <TableCell>
                                             {host.telegram_user_id
-                                                ? <Chip label="Bound"   size="small" color="success" />
-                                                : <Chip label="Unbound" size="small" />
+                                                ? <Chip label="Terhubung" size="small" color="success" />
+                                                : <Chip label="Belum terhubung" size="small" sx={{ bgcolor: '#f9fafb', color: '#6b7280' }} />
                                             }
                                         </TableCell>
                                         <TableCell>
                                             {host.binding_token ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                                                        {host.binding_token.slice(0, 8)}...
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#374151' }}>
+                                                        {host.binding_token.slice(0, 10)}…
                                                     </Typography>
-                                                    <Tooltip title={copiedToken === host.binding_token ? 'Copied!' : 'Copy /bind command'}>
-                                                        <IconButton size="small" onClick={() => copyToken(host.binding_token!)}>
-                                                            <ContentCopy fontSize="small" />
+                                                    <Tooltip title={copiedId === host.id ? 'Tersalin!' : 'Salin perintah /bind'}>
+                                                        <IconButton size="small" onClick={() => copyToken(host)}
+                                                            sx={{ color: copiedId === host.id ? '#16a34a' : '#9ca3af' }}>
+                                                            {copiedId === host.id
+                                                                ? <Check sx={{ fontSize: 14 }} />
+                                                                : <ContentCopy sx={{ fontSize: 14 }} />
+                                                            }
                                                         </IconButton>
                                                     </Tooltip>
                                                 </Box>
                                             ) : (
-                                                <Tooltip title="Regenerate token">
-                                                    <IconButton size="small" onClick={() => regenerateToken(host.id)}>
-                                                        <Refresh fontSize="small" />
+                                                <Tooltip title="Buat token baru">
+                                                    <IconButton size="small" onClick={() => regenerateToken(host.id)}
+                                                        sx={{ color: '#9ca3af' }}>
+                                                        <Refresh sx={{ fontSize: 16 }} />
                                                     </IconButton>
                                                 </Tooltip>
                                             )}
                                         </TableCell>
                                         <TableCell>
                                             <Chip
-                                                label={host.is_active ? 'Active' : 'Inactive'}
+                                                label={host.is_active ? 'Aktif' : 'Nonaktif'}
                                                 size="small"
                                                 color={host.is_active ? 'success' : 'default'}
                                             />
                                         </TableCell>
-                                        <TableCell>{formatDate(host.created_at)}</TableCell>
+                                        <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>
                                         <TableCell>
                                             <Box sx={{ display: 'flex', gap: 1 }}>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
+                                                <Button size="small" variant="outlined"
                                                     color={host.is_active ? 'warning' : 'success'}
-                                                    onClick={() => toggleStatus(host.id)}
-                                                >
-                                                    {host.is_active ? 'Deactivate' : 'Activate'}
+                                                    onClick={() => toggleStatus(host.id)}>
+                                                    {host.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                                                 </Button>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
+                                                <Button size="small" variant="text"
                                                     color="error"
-                                                    onClick={() => {
-                                                        if (confirm(`Delete ${host.full_name}?`)) deleteHost(host.id);
-                                                    }}
-                                                >
-                                                    Delete
+                                                    onClick={() => { if (confirm(`Hapus ${host.full_name}?`)) deleteHost(host.id); }}>
+                                                    Hapus
                                                 </Button>
                                             </Box>
                                         </TableCell>
@@ -147,7 +153,9 @@ export default function HostsPage() {
                                 ))}
                                 {hosts.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={7} align="center">No hosts yet</TableCell>
+                                        <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#9ca3af' }}>
+                                            Belum ada host — klik "Tambah Host" untuk mulai
+                                        </TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -158,25 +166,28 @@ export default function HostsPage() {
 
             {/* Create Dialog */}
             <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>Add New Host</DialogTitle>
+                <DialogTitle>Tambah Host Baru</DialogTitle>
                 <DialogContent>
-                    <TextField
-                        label="Full Name"
-                        value={fullName}
-                        onChange={e => setFullName(e.target.value)}
-                        fullWidth
-                        sx={{ mt: 1 }}
-                        autoFocus
-                    />
+                    <Box sx={{ pt: 0.5 }}>
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#374151', mb: 0.75 }}>
+                            Nama Lengkap
+                        </Typography>
+                        <TextField
+                            placeholder="Contoh: Siti Rahma"
+                            value={fullName}
+                            onChange={e => setFullName(e.target.value)}
+                            fullWidth autoFocus
+                            onKeyDown={e => { if (e.key === 'Enter' && fullName.trim()) createHost(); }}
+                        />
+                    </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        disabled={!fullName.trim() || creating}
-                        onClick={() => createHost()}
-                    >
-                        Create
+                    <Button onClick={() => { setCreateOpen(false); setFullName(''); }} sx={{ color: '#6b7280' }}>
+                        Batal
+                    </Button>
+                    <Button variant="contained" disabled={!fullName.trim() || creating}
+                        onClick={() => createHost()}>
+                        Buat Host
                     </Button>
                 </DialogActions>
             </Dialog>
