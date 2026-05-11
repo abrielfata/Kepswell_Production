@@ -16,7 +16,7 @@ function normalizeHostName(raw: string): string {
     return raw.trim().replace(/\s{2,}/g, ' ');
 }
 
-// ─── Validator (Lapis 2 — Backend) ───────────────────────────────────────────
+// ─── Validator (nama saja — duplikat nama TIDAK divalidasi karena host_code jadi pembeda) ───
 
 const HOST_NAME_RULES = {
     minChars: 3,
@@ -26,7 +26,7 @@ const HOST_NAME_RULES = {
 } as const;
 
 /**
- * Validasi nama host. Melempar { status, message } jika tidak valid.
+ * Validasi format nama host. Melempar { status, message } jika tidak valid.
  * Dipanggil SETELAH normalisasi sehingga spasi ganda sudah bersih.
  */
 function validateHostName(name: string): void {
@@ -101,11 +101,8 @@ export class HostService {
         const normalized = normalizeHostName(data.full_name);
         validateHostName(normalized);
 
-        const duplicate = await this.hostRepo.findByFullName(normalized);
-        if (duplicate) {
-            throw { status: 409, message: `Host dengan nama "${normalized}" sudah terdaftar` };
-        }
-
+        // host_code di-generate otomatis di repository (KSW-XXXX dari id)
+        // Tidak ada cek duplikat nama — host_code yang menjadi pembeda unik
         const host = await this.hostRepo.create({ full_name: normalized });
         const code = await this.generateUniqueRegistrationCode();
         await this.hostRepo.insertRegistrationCode(host.id, code);
@@ -122,11 +119,6 @@ export class HostService {
             }
             const normalized = normalizeHostName(data.full_name);
             validateHostName(normalized);
-
-            const duplicate = await this.hostRepo.findByFullName(normalized);
-            if (duplicate && duplicate.id !== id) {
-                throw { status: 409, message: `Host dengan nama "${normalized}" sudah terdaftar` };
-            }
             data.full_name = normalized;
         }
 

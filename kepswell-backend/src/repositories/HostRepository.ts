@@ -36,20 +36,29 @@ export class HostRepository {
         return result.rows[0] || null;
     }
 
-    async findByFullName(fullName: string): Promise<HostRow | null> {
-        const result = await query(
-            `${hostSelect} WHERE LOWER(TRIM(h.full_name)) = LOWER(TRIM($1))`,
-            [fullName]
-        );
-        return result.rows[0] || null;
-    }
-
+    /**
+     * Buat host baru dalam satu transaksi:
+     * 1. INSERT ke tabel hosts
+     * 2. Langsung UPDATE host_code = 'KSW-' || LPAD(id, 4, '0')
+     * Sehingga host_code selalu konsisten dengan id dan tidak bisa NULL.
+     */
     async create(data: { full_name: string }): Promise<Host> {
-        const result = await query(
-            `INSERT INTO hosts (full_name) VALUES ($1) RETURNING *`,
-            [data.full_name]
-        );
-        return result.rows[0];
+        return withTransaction(async (client) => {
+            const insertRes = await client.query<Host>(
+                `INSERT INTO hosts (full_name) VALUES ($1) RETURNING *`,
+                [data.full_name]
+            );
+            const inserted = insertRes.rows[0];
+
+            const updateRes = await client.query<Host>(
+                `UPDATE hosts
+                 SET host_code = 'KSW-' || LPAD(id::text, 4, '0'), updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $1
+                 RETURNING *`,
+                [inserted.id]
+            );
+            return updateRes.rows[0];
+        });
     }
 
     async update(id: number, data: Partial<{
