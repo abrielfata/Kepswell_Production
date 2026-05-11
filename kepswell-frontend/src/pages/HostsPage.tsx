@@ -18,6 +18,26 @@ export default function HostsPage() {
     const [nameError, setNameError]     = useState('');
     const [copiedId, setCopiedId]       = useState<number | null>(null);
 
+    // ── Validasi realtime (Lapis 1 — Frontend) ──────────────────────────────
+    function validateName(value: string): string {
+        const normalized = value.trim().replace(/\s{2,}/g, ' ');
+
+        if (!normalized) return 'Nama lengkap wajib diisi';
+        if (normalized.length < 3) return 'Nama terlalu pendek (min. 3 karakter)';
+        if (normalized.length > 100) return 'Nama terlalu panjang (maks. 100 karakter)';
+
+        const wordCount = normalized.split(' ').filter(w => w.length > 0).length;
+        if (wordCount < 2) return 'Nama harus terdiri dari minimal 2 kata';
+
+        if (/\s{2,}/.test(value.trim())) return 'Nama tidak boleh mengandung spasi ganda';
+
+        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\s.']*$/.test(normalized)) {
+            return 'Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof';
+        }
+
+        return '';
+    }
+
     const queryClient = useQueryClient();
     const { showNotification } = useNotification();
 
@@ -39,6 +59,8 @@ export default function HostsPage() {
             const msg: string = err?.response?.data?.message ?? '';
             if (err?.response?.status === 409) {
                 setNameError(msg || 'Nama host sudah terdaftar');
+            } else if (err?.response?.status === 400) {
+                setNameError(msg || 'Nama tidak valid');
             } else {
                 showNotification('Gagal menambahkan host', 'error');
             }
@@ -189,11 +211,17 @@ export default function HostsPage() {
                         <TextField
                             placeholder="Contoh: Siti Rahma"
                             value={fullName}
-                            onChange={e => { setFullName(e.target.value); setNameError(''); }}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setFullName(val);
+                                setNameError(validateName(val));
+                            }}
                             fullWidth autoFocus
                             error={!!nameError}
-                            helperText={nameError}
-                            onKeyDown={e => { if (e.key === 'Enter' && fullName.trim()) createHost(); }}
+                            helperText={nameError || ' '}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && fullName.trim() && !validateName(fullName)) createHost();
+                            }}
                         />
                     </Box>
                 </DialogContent>
@@ -201,7 +229,8 @@ export default function HostsPage() {
                     <Button onClick={handleClose} sx={{ color: '#6b7280' }}>
                         Batal
                     </Button>
-                    <Button variant="contained" disabled={!fullName.trim() || creating}
+                    <Button variant="contained"
+                        disabled={!fullName.trim() || !!validateName(fullName) || creating}
                         onClick={() => createHost()}>
                         Buat Host
                     </Button>
