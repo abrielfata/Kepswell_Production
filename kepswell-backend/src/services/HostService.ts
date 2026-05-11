@@ -50,7 +50,12 @@ export class HostService {
 
     async create(data: { full_name: string }): Promise<HostRow> {
         if (!data.full_name?.trim()) {
-            throw { status: 400, message: 'Full name is required' };
+            throw { status: 400, message: 'Nama lengkap wajib diisi' };
+        }
+
+        const duplicate = await this.hostRepo.findByFullName(data.full_name.trim());
+        if (duplicate) {
+            throw { status: 409, message: `Host dengan nama "${data.full_name.trim()}" sudah terdaftar` };
         }
 
         const host = await this.hostRepo.create({
@@ -61,23 +66,27 @@ export class HostService {
         return { ...host, pending_registration_code: code };
     }
 
-    async update(id: number, data: { full_name?: string; is_active?: boolean }) {
+    async update(id: number, data: { full_name?: string }) {
         const existing = await this.hostRepo.findById(id);
-        if (!existing) throw { status: 404, message: 'Host not found' };
+        if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
+
+        if (data.full_name?.trim()) {
+            const nameToCheck = data.full_name.trim();
+            const duplicate = await this.hostRepo.findByFullName(nameToCheck);
+            if (duplicate && duplicate.id !== id) {
+                throw { status: 409, message: `Host dengan nama "${nameToCheck}" sudah terdaftar` };
+            }
+            data.full_name = nameToCheck;
+        }
+
         return this.hostRepo.update(id, data);
     }
 
     async delete(id: number) {
         const existing = await this.hostRepo.findById(id);
-        if (!existing) throw { status: 404, message: 'Host not found' };
+        if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
         await this.hostRepo.delete(id);
-        return { message: 'Host deleted successfully' };
-    }
-
-    async toggleStatus(id: number) {
-        const host = await this.hostRepo.findById(id);
-        if (!host) throw { status: 404, message: 'Host not found' };
-        return this.hostRepo.update(id, { is_active: !host.is_active });
+        return { message: 'Host berhasil dihapus' };
     }
 
     /** Host belum aktivasi: buang kode belum terpakai, buat kode baru (sekali pakai). */

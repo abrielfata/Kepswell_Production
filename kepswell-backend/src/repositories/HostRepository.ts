@@ -36,6 +36,14 @@ export class HostRepository {
         return result.rows[0] || null;
     }
 
+    async findByFullName(fullName: string): Promise<HostRow | null> {
+        const result = await query(
+            `${hostSelect} WHERE LOWER(TRIM(h.full_name)) = LOWER(TRIM($1))`,
+            [fullName]
+        );
+        return result.rows[0] || null;
+    }
+
     async create(data: { full_name: string }): Promise<Host> {
         const result = await query(
             `INSERT INTO hosts (full_name) VALUES ($1) RETURNING *`,
@@ -47,7 +55,6 @@ export class HostRepository {
     async update(id: number, data: Partial<{
         full_name: string;
         telegram_chat_id: string | null;
-        is_active: boolean;
     }>): Promise<Host | null> {
         const fields: string[] = [];
         const params: unknown[] = [];
@@ -60,10 +67,6 @@ export class HostRepository {
         if (data.telegram_chat_id !== undefined) {
             fields.push(`telegram_chat_id = $${idx++}`);
             params.push(data.telegram_chat_id);
-        }
-        if (data.is_active !== undefined) {
-            fields.push(`is_active = $${idx++}`);
-            params.push(data.is_active);
         }
 
         if (fields.length === 0) return null;

@@ -15,6 +15,7 @@ import { formatDate } from '../utils/format';
 export default function HostsPage() {
     const [createOpen, setCreateOpen]   = useState(false);
     const [fullName, setFullName]       = useState('');
+    const [nameError, setNameError]     = useState('');
     const [copiedId, setCopiedId]       = useState<number | null>(null);
 
     const queryClient = useQueryClient();
@@ -27,27 +28,26 @@ export default function HostsPage() {
 
     const { mutate: createHost, isPending: creating } = useMutation({
         mutationFn: () => hostsAPI.create({ full_name: fullName }),
-        onSuccess:  () => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             setCreateOpen(false);
             setFullName('');
+            setNameError('');
             showNotification('Host berhasil ditambahkan', 'success');
         },
-        onError: () => showNotification('Gagal menambahkan host', 'error'),
-    });
-
-    const { mutate: toggleStatus } = useMutation({
-        mutationFn: (id: number) => hostsAPI.toggleStatus(id),
-        onSuccess:  () => {
-            queryClient.invalidateQueries({ queryKey: ['hosts'] });
-            showNotification('Status host berhasil diperbarui', 'success');
+        onError: (err: any) => {
+            const msg: string = err?.response?.data?.message ?? '';
+            if (err?.response?.status === 409) {
+                setNameError(msg || 'Nama host sudah terdaftar');
+            } else {
+                showNotification('Gagal menambahkan host', 'error');
+            }
         },
-        onError: () => showNotification('Gagal mengubah status host', 'error'),
     });
 
     const { mutate: regenerateCode } = useMutation({
         mutationFn: (id: number) => hostsAPI.regenerateRegistrationCode(id),
-        onSuccess:  () => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             showNotification('Kode registrasi berhasil diganti', 'success');
         },
@@ -56,7 +56,7 @@ export default function HostsPage() {
 
     const { mutate: deleteHost } = useMutation({
         mutationFn: (id: number) => hostsAPI.delete(id),
-        onSuccess:  () => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             showNotification('Host berhasil dihapus', 'success');
         },
@@ -69,6 +69,12 @@ export default function HostsPage() {
         navigator.clipboard.writeText(`/daftar ${code}`);
         setCopiedId(host.id);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleClose = () => {
+        setCreateOpen(false);
+        setFullName('');
+        setNameError('');
     };
 
     return (
@@ -99,8 +105,7 @@ export default function HostsPage() {
                                 <TableRow>
                                     <TableCell>Nama</TableCell>
                                     <TableCell>Telegram</TableCell>
-                                    <TableCell>Kode registrasi</TableCell>
-                                    <TableCell>Status</TableCell>
+                                    <TableCell>Kode Registrasi</TableCell>
                                     <TableCell>Dibuat</TableCell>
                                     <TableCell>Aksi</TableCell>
                                 </TableRow>
@@ -151,33 +156,19 @@ export default function HostsPage() {
                                                 </Tooltip>
                                             )}
                                         </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={host.is_active ? 'Aktif' : 'Nonaktif'}
-                                                size="small"
-                                                color={host.is_active ? 'success' : 'default'}
-                                            />
-                                        </TableCell>
                                         <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>
                                         <TableCell>
-                                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                                <Button size="small" variant="outlined"
-                                                    color={host.is_active ? 'warning' : 'success'}
-                                                    onClick={() => toggleStatus(host.id)}>
-                                                    {host.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                                                </Button>
-                                                <Button size="small" variant="text"
-                                                    color="error"
-                                                    onClick={() => { if (confirm(`Hapus ${host.full_name}?`)) deleteHost(host.id); }}>
-                                                    Hapus
-                                                </Button>
-                                            </Box>
+                                            <Button size="small" variant="text"
+                                                color="error"
+                                                onClick={() => { if (confirm(`Hapus ${host.full_name}?`)) deleteHost(host.id); }}>
+                                                Hapus
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
                                 {hosts.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#9ca3af' }}>
+                                        <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#9ca3af' }}>
                                             Belum ada host — klik &quot;Tambah Host&quot; untuk mulai
                                         </TableCell>
                                     </TableRow>
@@ -188,7 +179,7 @@ export default function HostsPage() {
                 </CardContent>
             </Card>
 
-            <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="xs" fullWidth>
+            <Dialog open={createOpen} onClose={handleClose} maxWidth="xs" fullWidth>
                 <DialogTitle>Tambah Host Baru</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 0.5 }}>
@@ -198,14 +189,16 @@ export default function HostsPage() {
                         <TextField
                             placeholder="Contoh: Siti Rahma"
                             value={fullName}
-                            onChange={e => setFullName(e.target.value)}
+                            onChange={e => { setFullName(e.target.value); setNameError(''); }}
                             fullWidth autoFocus
+                            error={!!nameError}
+                            helperText={nameError}
                             onKeyDown={e => { if (e.key === 'Enter' && fullName.trim()) createHost(); }}
                         />
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => { setCreateOpen(false); setFullName(''); }} sx={{ color: '#6b7280' }}>
+                    <Button onClick={handleClose} sx={{ color: '#6b7280' }}>
                         Batal
                     </Button>
                     <Button variant="contained" disabled={!fullName.trim() || creating}
