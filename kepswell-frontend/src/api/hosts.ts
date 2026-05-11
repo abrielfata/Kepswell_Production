@@ -9,5 +9,6 @@ export const hostsAPI = {
         api.put(`/hosts/${id}`, data),
     delete: (id: number) => api.delete(`/hosts/${id}`),
     toggleStatus: (id: number) => api.patch(`/hosts/${id}/toggle`),
-    regenerateToken: (id: number) => api.patch(`/hosts/${id}/regenerate-token`),
+    regenerateRegistrationCode: (id: number) =>
+        api.patch(`/hosts/${id}/regenerate-registration-code`),
 };

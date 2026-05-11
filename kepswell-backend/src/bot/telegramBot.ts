@@ -4,10 +4,12 @@ import path from 'path';
 import { ENV } from '../config/env';
 import { HostRepository } from '../repositories/HostRepository';
 import { ReportRepository } from '../repositories/ReportRepository';
+import { HostService } from '../services/HostService';
 import { extractFromImage } from './ocrService';
 
-const hostRepo   = new HostRepository();
-const reportRepo = new ReportRepository();
+const hostRepo    = new HostRepository();
+const hostService = new HostService();
+const reportRepo  = new ReportRepository();
 const BASE_URL   = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
 
 const sendMessage = async (chatId: number | string, text: string) => {
@@ -29,7 +31,7 @@ export const notifyHostStatusUpdate = async (params: {
     notes?:     string;
 }) => {
     const host = await hostRepo.findById(params.host_id);
-    if (!host?.telegram_user_id) return; // host belum binding telegram, skip
+    if (!host?.telegram_chat_id) return;
 
     const gmvFormatted = new Intl.NumberFormat('id-ID', {
         style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
@@ -39,7 +41,7 @@ export const notifyHostStatusUpdate = async (params: {
 
     if (params.status === 'APPROVED') {
         await sendMessage(
-            host.telegram_user_id,
+            host.telegram_chat_id,
             `✅ *Laporan #${params.report_id} Disetujui!*\n\n` +
             `Platform : ${params.platform}\n` +
             `GMV      : ${gmvFormatted}\n` +
@@ -49,7 +51,7 @@ export const notifyHostStatusUpdate = async (params: {
         );
     } else {
         await sendMessage(
-            host.telegram_user_id,
+            host.telegram_chat_id,
             `❌ *Laporan #${params.report_id} Ditolak*\n\n` +
             `Platform : ${params.platform}\n` +
             `GMV      : ${gmvFormatted}\n` +
@@ -84,17 +86,17 @@ export const processUpdate = async (update: any) => {
     const message = update.message;
     if (!message) return;
 
-    const chatId         = message.chat.id;
-    const telegramUserId = String(message.from.id);
-    const text           = message.text?.trim();
+    const chatId           = message.chat.id;
+    const telegramChatId = String(message.chat.id);
+    const text             = message.text?.trim();
 
     // /start
     if (text === '/start') {
-        const host = await hostRepo.findByTelegramId(telegramUserId);
+        const host = await hostRepo.findByTelegramChatId(telegramChatId);
         if (!host) {
             await sendMessage(chatId,
-                '👋 Selamat datang!\n\nAkun Anda belum terdaftar.\n' +
-                'Minta *binding token* ke Manager dan kirim:\n`/bind TOKEN`'
+                '👋 Selamat datang!\n\nAnda belum terhubung sebagai host.\n' +
+                'Minta *kode registrasi* ke Manager, lalu kirim:\n`/daftar KODE`'
             );
         } else if (!host.is_active) {
             await sendMessage(chatId, '❌ Akun Anda dinonaktifkan. Hubungi Manager.');
@@ -106,37 +108,46 @@ export const processUpdate = async (update: any) => {
         return;
     }
 
-    // /bind TOKEN
-    if (text?.startsWith('/bind ')) {
-        const token = text.replace('/bind ', '').trim();
-        const host  = await hostRepo.findByBindingToken(token);
-
-        if (!host) {
-            await sendMessage(chatId, '❌ Token tidak valid atau sudah digunakan.');
+    // /daftar KODE (sekali pakai)
+    if (text && /^\/daftar\b/i.test(text)) {
+        const match = text.match(/^\/daftar\s+(.+)$/i);
+        const rawCode = match ? match[1].trim() : '';
+        if (!rawCode) {
+            await sendMessage(chatId,
+                'Gunakan: `/daftar KODE`\n\nKode diberikan Manager setelah Anda didaftarkan.'
+            );
             return;
         }
 
-        const alreadyBound = await hostRepo.findByTelegramId(telegramUserId);
-        if (alreadyBound) {
-            await sendMessage(chatId, '⚠️ Akun Telegram ini sudah terikat ke host lain.');
+        const { status } = await hostService.activateByRegistrationCode(rawCode, telegramChatId);
+
+        if (status === 'ok') {
+            const host = await hostRepo.findByTelegramChatId(telegramChatId);
+            await sendMessage(chatId,
+                `✅ Berhasil! Akun *${host?.full_name ?? 'host'}* telah terhubung.\n\n` +
+                `Kirimkan screenshot GMV untuk mulai laporan.`
+            );
             return;
         }
-
-        await hostRepo.update(host.id, {
-            telegram_user_id: telegramUserId,
-            binding_token:    null,
-        });
-
-        await sendMessage(chatId,
-            `✅ Berhasil! Akun *${host.full_name}* telah terhubung.\n\n` +
-            `Kirimkan screenshot GMV untuk mulai laporan.`
-        );
+        if (status === 'invalid_code') {
+            await sendMessage(chatId, '❌ Kode tidak valid atau sudah dipakai.');
+            return;
+        }
+        if (status === 'chat_already_host') {
+            await sendMessage(chatId, '⚠️ Chat Telegram ini sudah terdaftar sebagai host.');
+            return;
+        }
+        if (status === 'host_already_active') {
+            await sendMessage(chatId, '⚠️ Host ini sudah diaktivasi sebelumnya.');
+            return;
+        }
+        await sendMessage(chatId, '❌ Aktivasi gagal. Coba lagi atau hubungi Manager.');
         return;
     }
 
     // Konfirmasi Y/N
-    if (pendingReports.has(telegramUserId)) {
-        const pending  = pendingReports.get(telegramUserId);
+    if (pendingReports.has(telegramChatId)) {
+        const pending  = pendingReports.get(telegramChatId);
         const response = text?.toUpperCase();
 
         if (response === 'Y' || response === 'YA') {
@@ -152,7 +163,7 @@ export const processUpdate = async (update: any) => {
                 year:                  now.getFullYear(),
             });
 
-            pendingReports.delete(telegramUserId);
+            pendingReports.delete(telegramChatId);
 
             const gmvFormatted = new Intl.NumberFormat('id-ID', {
                 style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
@@ -166,7 +177,7 @@ export const processUpdate = async (update: any) => {
                 `Status: *PENDING* — menunggu verifikasi manager.`
             );
         } else if (response === 'N' || response === 'TIDAK') {
-            pendingReports.delete(telegramUserId);
+            pendingReports.delete(telegramChatId);
             await sendMessage(chatId, '❌ Laporan dibatalkan. Kirim screenshot baru.');
         } else {
             await sendMessage(chatId, 'Ketik *Y* untuk simpan atau *N* untuk batal.');
@@ -176,10 +187,13 @@ export const processUpdate = async (update: any) => {
 
     // Photo
     if (message.photo) {
-        const host = await hostRepo.findByTelegramId(telegramUserId);
+        const host = await hostRepo.findByTelegramChatId(telegramChatId);
 
         if (!host) {
-            await sendMessage(chatId, '❌ Akun belum terdaftar. Ketik /start');
+            await sendMessage(chatId,
+                '❌ Akun host Anda belum diaktivasi.\n' +
+                'Minta kode registrasi ke Manager lalu kirim `/daftar KODE` atau ketik /start.'
+            );
             return;
         }
         if (!host.is_active) {
@@ -215,7 +229,7 @@ export const processUpdate = async (update: any) => {
 
         const screenshotUrl = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${photo.file_id}`;
 
-        pendingReports.set(telegramUserId, {
+        pendingReports.set(telegramChatId, {
             host_id:      host.id,
             platform:     ocr.platform,
             gmv:          ocr.parsedGMV,
@@ -234,7 +248,7 @@ export const processUpdate = async (update: any) => {
         return;
     }
 
-    await sendMessage(chatId, 'Kirimkan *screenshot GMV* atau ketik /start');
+    await sendMessage(chatId, 'Kirim *screenshot GMV*, `/daftar KODE`, atau ketik /start');
 };
 
 export const setupWebhook = async (webhookUrl: string) => {

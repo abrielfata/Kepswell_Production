@@ -3,10 +3,20 @@ import jwt from 'jsonwebtoken';
 import { UserRepository } from '../repositories/UserRepository';
 import { ENV } from '../config/env';
 
+export type LoginResult = {
+    token: string;
+    user: {
+        id: number;
+        email: string;
+        full_name: string;
+        role: string;
+    };
+};
+
 export class AuthService {
     private userRepo = new UserRepository();
 
-    async login(email: string, password: string) {
+    async login(email: string, password: string): Promise<LoginResult> {
         if (!email || !password) {
             throw { status: 400, message: 'Email and password are required' };
         }
