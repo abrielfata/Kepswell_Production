@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, TextField, Button, Typography, Alert, CircularProgress, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function LoginPage() {
     const [email, setEmail]       = useState('');
@@ -11,6 +12,7 @@ export default function LoginPage() {
 
     const { login } = useAuth();
     const navigate  = useNavigate();
+    const { showNotification } = useNotification();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,9 +20,12 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await login(email, password);
+            showNotification('Login berhasil', 'success');
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Email atau password tidak valid');
+            const msg = err.response?.data?.message || 'Email atau password tidak valid';
+            setError(msg);
+            showNotification(msg, 'error');
         } finally {
             setLoading(false);
         }

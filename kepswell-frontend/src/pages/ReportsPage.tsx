@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportsAPI } from '../api/reports';
+import { useNotification } from '../contexts/NotificationContext';
 import type { Report, AvailableMonth } from '../types';
 import { formatCurrency, formatDuration, formatDateTime } from '../utils/format';
 
@@ -32,6 +33,7 @@ export default function ReportsPage() {
     const [notes, setNotes]                   = useState('');
 
     const queryClient = useQueryClient();
+    const { showNotification } = useNotification();
 
     const params = {
         page: page + 1, limit: rowsPerPage,
@@ -52,13 +54,16 @@ export default function ReportsPage() {
     const { mutate: updateStatus, isPending } = useMutation({
         mutationFn: ({ id, status, notes }: { id: number; status: string; notes?: string }) =>
             reportsAPI.updateStatus(id, status, notes),
-        onSuccess: () => {
+        onSuccess: (_data, vars) => {
             queryClient.invalidateQueries({ queryKey: ['reports'] });
             queryClient.invalidateQueries({ queryKey: ['statistics'] });
             queryClient.invalidateQueries({ queryKey: ['ranking'] });
             setSelectedReport(null);
             setNotes('');
+            const label = vars.status === 'APPROVED' ? 'disetujui' : 'ditolak';
+            showNotification(`Laporan berhasil ${label}`, 'success');
         },
+        onError: () => showNotification('Gagal memverifikasi laporan', 'error'),
     });
 
     const reports: Report[] = data?.reports || [];
