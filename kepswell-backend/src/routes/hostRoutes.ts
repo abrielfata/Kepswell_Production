@@ -13,6 +13,6 @@ router.post('/',                      ctrl.create);
 router.put('/:id',                    ctrl.update);
 router.delete('/:id',                 ctrl.delete);
 router.patch('/:id/toggle',           ctrl.toggleStatus);
-router.patch('/:id/regenerate-token', ctrl.regenerateToken);
+router.patch('/:id/regenerate-registration-code', ctrl.regenerateRegistrationCode);
 
 export default router;

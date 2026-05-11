@@ -61,9 +61,9 @@ export class HostController {
         }
     };
 
-    regenerateToken = async (req: Request, res: Response, next: NextFunction) => {
+    regenerateRegistrationCode = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const host = await this.hostService.regenerateToken(Number(req.params.id));
+            const host = await this.hostService.regenerateRegistrationCode(Number(req.params.id));
             res.status(200).json({ success: true, data: host });
         } catch (err) {
             next(err);

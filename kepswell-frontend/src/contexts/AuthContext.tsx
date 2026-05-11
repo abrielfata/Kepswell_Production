@@ -5,7 +5,8 @@ import { authAPI } from '../api/auth';
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    /** @returns true jika login berhasil, false jika kredensial salah (401). Error lain tetap di-throw. */
+    login: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
 }
 
@@ -25,11 +26,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .finally(() => setLoading(false));
     }, []);
 
-    const login = async (email: string, password: string) => {
-        const res = await authAPI.login(email, password);
-        const { token, user: userData } = res.data.data;
-        localStorage.setItem('token', token);
-        setUser(userData);
+    const login = async (email: string, password: string): Promise<boolean> => {
+        try {
+            const res = await authAPI.login(email, password);
+            const { token, user: userData } = res.data.data;
+            localStorage.setItem('token', token);
+            setUser(userData);
+            return true;
+        } catch (err: unknown) {
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            if (status === 401) return false;
+            throw err;
+        }
     };
 
     const logout = () => {

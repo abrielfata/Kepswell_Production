@@ -12,8 +12,10 @@ export interface User {
 export interface Host {
     id: number;
     full_name: string;
-    telegram_user_id: string | null;
-    binding_token: string | null;
+    telegram_chat_id: string | null;
+    /** Hanya host yang belum punya telegram_chat_id; dari join / ensure, bukan kolom DB. */
+    pending_registration_code?: string | null;
+    activated_at?: Date | null;
     is_active: boolean;
     created_at: Date;
     updated_at: Date;

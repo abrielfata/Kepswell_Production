@@ -8,8 +8,9 @@ export interface User {
 export interface Host {
     id: number;
     full_name: string;
-    telegram_user_id: string | null;
-    binding_token: string | null;
+    telegram_chat_id: string | null;
+    pending_registration_code?: string | null;
+    activated_at?: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;

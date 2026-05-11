@@ -45,13 +45,13 @@ export default function HostsPage() {
         onError: () => showNotification('Gagal mengubah status host', 'error'),
     });
 
-    const { mutate: regenerateToken } = useMutation({
-        mutationFn: (id: number) => hostsAPI.regenerateToken(id),
+    const { mutate: regenerateCode } = useMutation({
+        mutationFn: (id: number) => hostsAPI.regenerateRegistrationCode(id),
         onSuccess:  () => {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
-            showNotification('Token binding berhasil diperbarui', 'success');
+            showNotification('Kode registrasi berhasil diganti', 'success');
         },
-        onError: () => showNotification('Gagal memperbarui token', 'error'),
+        onError: () => showNotification('Gagal memperbarui kode', 'error'),
     });
 
     const { mutate: deleteHost } = useMutation({
@@ -63,20 +63,21 @@ export default function HostsPage() {
         onError: () => showNotification('Gagal menghapus host', 'error'),
     });
 
-    const copyToken = (host: Host) => {
-        navigator.clipboard.writeText(`/bind ${host.binding_token}`);
+    const copyRegisterCommand = (host: Host) => {
+        const code = host.pending_registration_code;
+        if (!code) return;
+        navigator.clipboard.writeText(`/daftar ${code}`);
         setCopiedId(host.id);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
     return (
         <Box>
-            {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3 }}>
                 <Box>
                     <Typography sx={{ fontWeight: 700, fontSize: '1.15rem', color: '#1a1d23' }}>Host</Typography>
                     <Typography sx={{ fontSize: '0.8rem', color: '#6b7280', mt: 0.25 }}>
-                        Kelola akun host dan token binding Telegram
+                        Kelola host dan kode registrasi sekali pakai (Telegram Chat ID setelah aktivasi)
                     </Typography>
                 </Box>
                 <Button variant="contained" onClick={() => setCreateOpen(true)} sx={{ px: 2 }}>
@@ -84,13 +85,12 @@ export default function HostsPage() {
                 </Button>
             </Box>
 
-            {/* Info */}
             <Alert severity="info" sx={{ mb: 2.5 }}>
-                Setelah host dibuat, salin token binding dan kirimkan ke host.
-                Host ketik <strong>/bind TOKEN</strong> di Telegram Bot untuk menghubungkan akun.
+                Setelah host dibuat, berikan <strong>kode registrasi</strong> ke host (di luar sistem).
+                Host kirim <strong>/daftar KODE</strong> di bot Telegram. Kode hanya dipakai sekali; identitas host
+                adalah Chat ID Telegram.
             </Alert>
 
-            {/* Table */}
             <Card>
                 <CardContent sx={{ p: 0 }}>
                     <TableContainer component={Paper} elevation={0}>
@@ -99,7 +99,7 @@ export default function HostsPage() {
                                 <TableRow>
                                     <TableCell>Nama</TableCell>
                                     <TableCell>Telegram</TableCell>
-                                    <TableCell>Binding Token</TableCell>
+                                    <TableCell>Kode registrasi</TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Dibuat</TableCell>
                                     <TableCell>Aksi</TableCell>
@@ -113,19 +113,19 @@ export default function HostsPage() {
                                             <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>#{host.id}</Typography>
                                         </TableCell>
                                         <TableCell>
-                                            {host.telegram_user_id
+                                            {host.telegram_chat_id
                                                 ? <Chip label="Terhubung" size="small" color="success" />
-                                                : <Chip label="Belum terhubung" size="small" sx={{ bgcolor: '#f9fafb', color: '#6b7280' }} />
+                                                : <Chip label="Belum aktivasi" size="small" sx={{ bgcolor: '#f9fafb', color: '#6b7280' }} />
                                             }
                                         </TableCell>
                                         <TableCell>
-                                            {host.binding_token ? (
+                                            {!host.telegram_chat_id && host.pending_registration_code ? (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                     <Typography sx={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#374151' }}>
-                                                        {host.binding_token.slice(0, 10)}…
+                                                        {host.pending_registration_code}
                                                     </Typography>
-                                                    <Tooltip title={copiedId === host.id ? 'Tersalin!' : 'Salin perintah /bind'}>
-                                                        <IconButton size="small" onClick={() => copyToken(host)}
+                                                    <Tooltip title={copiedId === host.id ? 'Tersalin!' : 'Salin /daftar KODE'}>
+                                                        <IconButton size="small" onClick={() => copyRegisterCommand(host)}
                                                             sx={{ color: copiedId === host.id ? '#16a34a' : '#9ca3af' }}>
                                                             {copiedId === host.id
                                                                 ? <Check sx={{ fontSize: 14 }} />
@@ -133,10 +133,18 @@ export default function HostsPage() {
                                                             }
                                                         </IconButton>
                                                     </Tooltip>
+                                                    <Tooltip title="Ganti kode baru (kode lama tidak berlaku)">
+                                                        <IconButton size="small" onClick={() => regenerateCode(host.id)}
+                                                            sx={{ color: '#9ca3af' }}>
+                                                            <Refresh sx={{ fontSize: 16 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
                                                 </Box>
+                                            ) : host.telegram_chat_id ? (
+                                                <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>—</Typography>
                                             ) : (
-                                                <Tooltip title="Buat token baru">
-                                                    <IconButton size="small" onClick={() => regenerateToken(host.id)}
+                                                <Tooltip title="Muat ulang atau buat kode">
+                                                    <IconButton size="small" onClick={() => regenerateCode(host.id)}
                                                         sx={{ color: '#9ca3af' }}>
                                                         <Refresh sx={{ fontSize: 16 }} />
                                                     </IconButton>
@@ -170,7 +178,7 @@ export default function HostsPage() {
                                 {hosts.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#9ca3af' }}>
-                                            Belum ada host — klik "Tambah Host" untuk mulai
+                                            Belum ada host — klik &quot;Tambah Host&quot; untuk mulai
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -180,7 +188,6 @@ export default function HostsPage() {
                 </CardContent>
             </Card>
 
-            {/* Create Dialog */}
             <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>Tambah Host Baru</DialogTitle>
                 <DialogContent>

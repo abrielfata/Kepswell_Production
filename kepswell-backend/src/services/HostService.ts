@@ -1,30 +1,64 @@
 import crypto from 'crypto';
-import { HostRepository } from '../repositories/HostRepository';
+import { HostRepository, HostRow } from '../repositories/HostRepository';
+
+function normalizeRegistrationCode(raw: string): string {
+    return raw.trim().toUpperCase();
+}
 
 export class HostService {
     private hostRepo = new HostRepository();
 
-    async getAll(isActive?: boolean) {
-        return this.hostRepo.findAll(isActive);
+    private async generateUniqueRegistrationCode(): Promise<string> {
+        const maxAttempts = 50;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const code = crypto.randomBytes(6).toString('hex').toUpperCase();
+            const exists = await this.hostRepo.registrationCodeExists(code);
+            if (!exists) return code;
+        }
+        throw {
+            status: 503,
+            message: 'Could not generate a unique registration code; try again',
+        };
     }
 
-    async getById(id: number) {
+    /** Pastikan host yang belum aktivasi punya tepat satu kode pending (data lama / tanpa baris kode). */
+    private async ensurePendingRegistrationCode(host: HostRow): Promise<HostRow> {
+        if (host.telegram_chat_id) return host;
+        const existing = await this.hostRepo.findPendingRegistrationCode(host.id);
+        if (existing) return { ...host, pending_registration_code: existing };
+        const code = await this.generateUniqueRegistrationCode();
+        await this.hostRepo.insertRegistrationCode(host.id, code);
+        return { ...host, pending_registration_code: code };
+    }
+
+    async getAll(isActive?: boolean): Promise<HostRow[]> {
+        const rows = await this.hostRepo.findAll(isActive);
+        return Promise.all(
+            rows.map(async (h) => {
+                if (h.telegram_chat_id) return h;
+                return this.ensurePendingRegistrationCode(h);
+            })
+        );
+    }
+
+    async getById(id: number): Promise<HostRow> {
         const host = await this.hostRepo.findById(id);
         if (!host) throw { status: 404, message: 'Host not found' };
-        return host;
+        if (host.telegram_chat_id) return host;
+        return this.ensurePendingRegistrationCode(host);
     }
 
-    async create(data: { full_name: string }) {
+    async create(data: { full_name: string }): Promise<HostRow> {
         if (!data.full_name?.trim()) {
             throw { status: 400, message: 'Full name is required' };
         }
 
-        const binding_token = crypto.randomBytes(16).toString('hex');
-
-        return this.hostRepo.create({
+        const host = await this.hostRepo.create({
             full_name: data.full_name.trim(),
-            binding_token,
         });
+        const code = await this.generateUniqueRegistrationCode();
+        await this.hostRepo.insertRegistrationCode(host.id, code);
+        return { ...host, pending_registration_code: code };
     }
 
     async update(id: number, data: { full_name?: string; is_active?: boolean }) {
@@ -46,24 +80,27 @@ export class HostService {
         return this.hostRepo.update(id, { is_active: !host.is_active });
     }
 
-    async regenerateToken(id: number) {
+    /** Host belum aktivasi: buang kode belum terpakai, buat kode baru (sekali pakai). */
+    async regenerateRegistrationCode(id: number): Promise<HostRow> {
         const host = await this.hostRepo.findById(id);
         if (!host) throw { status: 404, message: 'Host not found' };
-        const binding_token = crypto.randomBytes(16).toString('hex');
-        return this.hostRepo.update(id, { binding_token });
-    }
-
-    async bindTelegram(token: string, telegramUserId: string) {
-        const host = await this.hostRepo.findByBindingToken(token);
-        if (!host) throw { status: 404, message: 'Invalid binding token' };
-
-        if (host.telegram_user_id) {
-            throw { status: 400, message: 'Host already bound to a Telegram account' };
+        if (host.telegram_chat_id) {
+            throw { status: 400, message: 'Host already activated; registration code cannot be changed' };
         }
 
-        return this.hostRepo.update(host.id, {
-            telegram_user_id: telegramUserId,
-            binding_token: null,
-        });
+        await this.hostRepo.deleteUnusedRegistrationCodesForHost(id);
+        const code = await this.generateUniqueRegistrationCode();
+        await this.hostRepo.insertRegistrationCode(id, code);
+        return { ...host, pending_registration_code: code };
+    }
+
+    /** Dipanggil dari bot Telegram setelah validasi input. */
+    async activateByRegistrationCode(rawCode: string, telegramChatId: string) {
+        const code = normalizeRegistrationCode(rawCode);
+        if (!code) {
+            return { status: 'invalid_code' as const };
+        }
+        const result = await this.hostRepo.activateByRegistrationCode(code, telegramChatId);
+        return { status: result };
     }
 }

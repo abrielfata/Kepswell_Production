@@ -19,11 +19,17 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            await login(email, password);
-            showNotification('Login berhasil', 'success');
-            navigate('/');
+            const ok = await login(email, password);
+            if (ok) {
+                showNotification('Login berhasil', 'success');
+                navigate('/');
+            } else {
+                const msg = 'Email atau password tidak valid';
+                setError(msg);
+                showNotification(msg, 'error');
+            }
         } catch (err: any) {
-            const msg = err.response?.data?.message || 'Email atau password tidak valid';
+            const msg = err.response?.data?.message || 'Terjadi kesalahan. Coba lagi nanti.';
             setError(msg);
             showNotification(msg, 'error');
         } finally {
