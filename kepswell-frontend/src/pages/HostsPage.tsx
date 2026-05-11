@@ -8,6 +8,7 @@ import {
 import { ContentCopy, Check, Refresh } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hostsAPI } from '../api/hosts';
+import { useNotification } from '../contexts/NotificationContext';
 import type { Host } from '../types';
 import { formatDate } from '../utils/format';
 
@@ -17,6 +18,7 @@ export default function HostsPage() {
     const [copiedId, setCopiedId]       = useState<number | null>(null);
 
     const queryClient = useQueryClient();
+    const { showNotification } = useNotification();
 
     const { data: hosts = [] } = useQuery({
         queryKey: ['hosts'],
@@ -29,22 +31,36 @@ export default function HostsPage() {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             setCreateOpen(false);
             setFullName('');
+            showNotification('Host berhasil ditambahkan', 'success');
         },
+        onError: () => showNotification('Gagal menambahkan host', 'error'),
     });
 
     const { mutate: toggleStatus } = useMutation({
         mutationFn: (id: number) => hostsAPI.toggleStatus(id),
-        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
+        onSuccess:  () => {
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
+            showNotification('Status host berhasil diperbarui', 'success');
+        },
+        onError: () => showNotification('Gagal mengubah status host', 'error'),
     });
 
     const { mutate: regenerateToken } = useMutation({
         mutationFn: (id: number) => hostsAPI.regenerateToken(id),
-        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
+        onSuccess:  () => {
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
+            showNotification('Token binding berhasil diperbarui', 'success');
+        },
+        onError: () => showNotification('Gagal memperbarui token', 'error'),
     });
 
     const { mutate: deleteHost } = useMutation({
         mutationFn: (id: number) => hostsAPI.delete(id),
-        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['hosts'] }),
+        onSuccess:  () => {
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
+            showNotification('Host berhasil dihapus', 'success');
+        },
+        onError: () => showNotification('Gagal menghapus host', 'error'),
     });
 
     const copyToken = (host: Host) => {
