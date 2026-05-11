@@ -1,9 +1,54 @@
 import crypto from 'crypto';
 import { HostRepository, HostRow } from '../repositories/HostRepository';
 
+// ─── Normalizer ───────────────────────────────────────────────────────────────
+
 function normalizeRegistrationCode(raw: string): string {
     return raw.trim().toUpperCase();
 }
+
+/**
+ * Normalisasi nama host sebelum disimpan:
+ * - Trim ujung
+ * - Ganti spasi ganda (atau lebih) di tengah dengan 1 spasi
+ */
+function normalizeHostName(raw: string): string {
+    return raw.trim().replace(/\s{2,}/g, ' ');
+}
+
+// ─── Validator (Lapis 2 — Backend) ───────────────────────────────────────────
+
+const HOST_NAME_RULES = {
+    minChars: 3,
+    maxChars: 100,
+    minWords: 2,
+    pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\s.']*$/,
+} as const;
+
+/**
+ * Validasi nama host. Melempar { status, message } jika tidak valid.
+ * Dipanggil SETELAH normalisasi sehingga spasi ganda sudah bersih.
+ */
+function validateHostName(name: string): void {
+    if (name.length < HOST_NAME_RULES.minChars) {
+        throw { status: 400, message: `Nama terlalu pendek (min. ${HOST_NAME_RULES.minChars} karakter)` };
+    }
+
+    if (name.length > HOST_NAME_RULES.maxChars) {
+        throw { status: 400, message: `Nama terlalu panjang (maks. ${HOST_NAME_RULES.maxChars} karakter)` };
+    }
+
+    const wordCount = name.split(' ').filter(w => w.length > 0).length;
+    if (wordCount < HOST_NAME_RULES.minWords) {
+        throw { status: 400, message: 'Nama harus terdiri dari minimal 2 kata' };
+    }
+
+    if (!HOST_NAME_RULES.pattern.test(name)) {
+        throw { status: 400, message: 'Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof' };
+    }
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
 
 export class HostService {
     private hostRepo = new HostRepository();
@@ -43,7 +88,7 @@ export class HostService {
 
     async getById(id: number): Promise<HostRow> {
         const host = await this.hostRepo.findById(id);
-        if (!host) throw { status: 404, message: 'Host not found' };
+        if (!host) throw { status: 404, message: 'Host tidak ditemukan' };
         if (host.telegram_chat_id) return host;
         return this.ensurePendingRegistrationCode(host);
     }
@@ -53,14 +98,15 @@ export class HostService {
             throw { status: 400, message: 'Nama lengkap wajib diisi' };
         }
 
-        const duplicate = await this.hostRepo.findByFullName(data.full_name.trim());
+        const normalized = normalizeHostName(data.full_name);
+        validateHostName(normalized);
+
+        const duplicate = await this.hostRepo.findByFullName(normalized);
         if (duplicate) {
-            throw { status: 409, message: `Host dengan nama "${data.full_name.trim()}" sudah terdaftar` };
+            throw { status: 409, message: `Host dengan nama "${normalized}" sudah terdaftar` };
         }
 
-        const host = await this.hostRepo.create({
-            full_name: data.full_name.trim(),
-        });
+        const host = await this.hostRepo.create({ full_name: normalized });
         const code = await this.generateUniqueRegistrationCode();
         await this.hostRepo.insertRegistrationCode(host.id, code);
         return { ...host, pending_registration_code: code };
@@ -70,13 +116,18 @@ export class HostService {
         const existing = await this.hostRepo.findById(id);
         if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
 
-        if (data.full_name?.trim()) {
-            const nameToCheck = data.full_name.trim();
-            const duplicate = await this.hostRepo.findByFullName(nameToCheck);
-            if (duplicate && duplicate.id !== id) {
-                throw { status: 409, message: `Host dengan nama "${nameToCheck}" sudah terdaftar` };
+        if (data.full_name !== undefined) {
+            if (!data.full_name.trim()) {
+                throw { status: 400, message: 'Nama lengkap wajib diisi' };
             }
-            data.full_name = nameToCheck;
+            const normalized = normalizeHostName(data.full_name);
+            validateHostName(normalized);
+
+            const duplicate = await this.hostRepo.findByFullName(normalized);
+            if (duplicate && duplicate.id !== id) {
+                throw { status: 409, message: `Host dengan nama "${normalized}" sudah terdaftar` };
+            }
+            data.full_name = normalized;
         }
 
         return this.hostRepo.update(id, data);
@@ -92,9 +143,9 @@ export class HostService {
     /** Host belum aktivasi: buang kode belum terpakai, buat kode baru (sekali pakai). */
     async regenerateRegistrationCode(id: number): Promise<HostRow> {
         const host = await this.hostRepo.findById(id);
-        if (!host) throw { status: 404, message: 'Host not found' };
+        if (!host) throw { status: 404, message: 'Host tidak ditemukan' };
         if (host.telegram_chat_id) {
-            throw { status: 400, message: 'Host already activated; registration code cannot be changed' };
+            throw { status: 400, message: 'Host sudah aktif; kode registrasi tidak dapat diganti' };
         }
 
         await this.hostRepo.deleteUnusedRegistrationCodesForHost(id);
