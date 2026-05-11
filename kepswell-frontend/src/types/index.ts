@@ -7,6 +7,7 @@ export interface User {
 
 export interface Host {
     id: number;
+    host_code: string;
     full_name: string;
     telegram_chat_id: string | null;
     pending_registration_code?: string | null;

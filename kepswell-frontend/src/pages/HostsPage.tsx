@@ -48,12 +48,16 @@ export default function HostsPage() {
 
     const { mutate: createHost, isPending: creating } = useMutation({
         mutationFn: () => hostsAPI.create({ full_name: fullName }),
-        onSuccess: () => {
+        onSuccess: (res) => {
+            const created = res.data.data as Host;
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             setCreateOpen(false);
             setFullName('');
             setNameError('');
-            showNotification('Host berhasil ditambahkan', 'success');
+            showNotification(
+                `Host ${created.full_name} berhasil ditambahkan dengan kode ${created.host_code}`,
+                'success'
+            );
         },
         onError: (err: any) => {
             const msg: string = err?.response?.data?.message ?? '';
@@ -125,6 +129,7 @@ export default function HostsPage() {
                         <Table>
                             <TableHead>
                                 <TableRow>
+                                    <TableCell>Kode</TableCell>
                                     <TableCell>Nama</TableCell>
                                     <TableCell>Telegram</TableCell>
                                     <TableCell>Kode Registrasi</TableCell>
@@ -136,8 +141,18 @@ export default function HostsPage() {
                                 {hosts.map(host => (
                                     <TableRow key={host.id}>
                                         <TableCell>
+                                            <Typography sx={{
+                                                fontFamily: 'monospace',
+                                                fontWeight: 600,
+                                                fontSize: '0.82rem',
+                                                color: '#2563EB',
+                                                letterSpacing: '0.03em',
+                                            }}>
+                                                {host.host_code}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>
                                             <Typography sx={{ fontWeight: 500, fontSize: '0.85rem' }}>{host.full_name}</Typography>
-                                            <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>#{host.id}</Typography>
                                         </TableCell>
                                         <TableCell>
                                             {host.telegram_chat_id
@@ -190,7 +205,7 @@ export default function HostsPage() {
                                 ))}
                                 {hosts.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#9ca3af' }}>
+                                        <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#9ca3af' }}>
                                             Belum ada host — klik &quot;Tambah Host&quot; untuk mulai
                                         </TableCell>
                                     </TableRow>
