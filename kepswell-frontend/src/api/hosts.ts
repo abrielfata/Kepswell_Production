@@ -5,10 +5,9 @@ export const hostsAPI = {
         api.get('/hosts', { params: is_active !== undefined ? { is_active } : {} }),
     getById: (id: number) => api.get(`/hosts/${id}`),
     create: (data: { full_name: string }) => api.post('/hosts', data),
-    update: (id: number, data: { full_name?: string; is_active?: boolean }) =>
+    update: (id: number, data: { full_name?: string }) =>
         api.put(`/hosts/${id}`, data),
     delete: (id: number) => api.delete(`/hosts/${id}`),
-    toggleStatus: (id: number) => api.patch(`/hosts/${id}/toggle`),
     regenerateRegistrationCode: (id: number) =>
         api.patch(`/hosts/${id}/regenerate-registration-code`),
 };
