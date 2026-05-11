@@ -40,9 +40,17 @@ const parseGMV = (text: string): number => {
 
 const parseDurationMinutes = (text: string): number => {
     const patterns = [
-        { regex: /(\d+)\s*jam(?:\s*(\d+)\s*menit)?/i, type: 'jam' },
-        { regex: /(\d+)\s*menit/i,                     type: 'menit' },
-        { regex: /(\d{1,2}):(\d{2}):(\d{2})/,         type: 'hms' },
+        // "1 jam 30 mnt" atau "1 jam 30 menit" (harus dicek dulu sebelum pattern menit saja)
+        { regex: /(\d+)\s*jam(?:\s*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
+
+        // "54 mnt" atau "54 menit"
+        { regex: /(\d+)\s*(?:mnt|menit)\b/i, type: 'menit' },
+
+        // Format HH:MM:SS
+        { regex: /(\d{1,2}):(\d{2}):(\d{2})/, type: 'hms' },
+
+        // "Durasi: 54 mnt" — label eksplisit sebagai fallback terakhir
+        { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)/i, type: 'menit' },
     ];
 
     for (const p of patterns) {
@@ -54,6 +62,7 @@ const parseDurationMinutes = (text: string): number => {
     }
     return 0;
 };
+
 
 const detectPlatform = (text: string): 'TIKTOK' | 'SHOPEE' => {
     const upper = text.toUpperCase();
