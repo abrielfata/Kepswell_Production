@@ -12,4 +12,5 @@ export const ENV = {
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
     CHAT_ID_SALT: process.env.CHAT_ID_SALT!,
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY!,
+    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:5000',
 };

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { ENV } from '../config/env';
 import { HostRepository } from '../repositories/HostRepository';
 import { ReportRepository } from '../repositories/ReportRepository';
@@ -84,13 +85,15 @@ const downloadPhoto = async (fileId: string): Promise<string | null> => {
         const fileUrl  = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${filePath}`;
         const imgRes   = await axios.get(fileUrl, { responseType: 'arraybuffer' });
 
-        const tempDir  = path.join(__dirname, '../temp');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        const uploadsDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-        const savePath = path.join(tempDir, `photo_${Date.now()}.jpg`);
+        const filename = `screenshot_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.jpg`;
+        const savePath = path.join(uploadsDir, filename);
         fs.writeFileSync(savePath, imgRes.data);
-        return savePath;
-    } catch {
+        return filename;
+    } catch (err) {
+        console.error('Download photo error:', err);
         return null;
     }
 };
@@ -224,15 +227,16 @@ export const processUpdate = async (update: any) => {
         await sendMessage(chatId, '⏳ Memproses screenshot...');
 
         const photo    = message.photo[message.photo.length - 1];
-        const savePath = await downloadPhoto(photo.file_id);
+        const filename = await downloadPhoto(photo.file_id);
 
-        if (!savePath) {
+        if (!filename) {
             await sendMessage(chatId, '❌ Gagal mengunduh foto. Coba lagi.');
             return;
         }
 
-        const ocr = await extractFromImage(savePath);
-        if (fs.existsSync(savePath)) fs.unlinkSync(savePath);
+        const uploadsDir = path.join(__dirname, '../uploads');
+        const localPath  = path.join(uploadsDir, filename);
+        const ocr = await extractFromImage(localPath);
 
         if (!ocr.success) {
             await sendMessage(chatId, `❌ Gagal membaca teks.\n${ocr.error}`);
@@ -247,7 +251,7 @@ export const processUpdate = async (update: any) => {
             ? `${Math.floor(ocr.parsedDurationMinutes / 60)}j ${ocr.parsedDurationMinutes % 60}m`
             : 'Tidak terdeteksi';
 
-        const screenshotUrl = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${photo.file_id}`;
+        const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
 
         pendingReports.set(telegramChatId, {
             host_id:      host.id,
@@ -322,9 +326,4 @@ export const startPolling = async () => {
     };
 
     poll();
-};
-
-export const stopPolling = () => {
-    pollingActive = false;
-    console.log('🤖 Bot polling dihentikan');
 };
