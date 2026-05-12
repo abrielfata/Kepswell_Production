@@ -1,5 +1,6 @@
 import { query, withTransaction } from '../config/db';
 import type { Host } from '../types';
+import { hashChatId, encrypt, decrypt } from '../utils/security';
 
 const hostSelect = `
     SELECT h.*,
@@ -10,6 +11,14 @@ const hostSelect = `
 `;
 
 export type HostRow = Host;
+
+const mapHostRow = (row: any): HostRow => {
+    if (!row) return row;
+    return {
+        ...row,
+        telegram_chat_id: row.telegram_chat_id ? decrypt(row.telegram_chat_id) : null,
+    };
+};
 
 export class HostRepository {
     async findAll(isActive?: boolean): Promise<HostRow[]> {
@@ -23,17 +32,18 @@ export class HostRepository {
 
         sql += ' ORDER BY h.created_at DESC';
         const result = await query(sql, params);
-        return result.rows;
+        return result.rows.map(mapHostRow);
     }
 
     async findById(id: number): Promise<HostRow | null> {
         const result = await query(`${hostSelect} WHERE h.id = $1`, [id]);
-        return result.rows[0] || null;
+        return mapHostRow(result.rows[0]);
     }
 
     async findByTelegramChatId(telegramChatId: string): Promise<HostRow | null> {
-        const result = await query(`${hostSelect} WHERE h.telegram_chat_id = $1`, [telegramChatId]);
-        return result.rows[0] || null;
+        const hash = hashChatId(telegramChatId);
+        const result = await query(`${hostSelect} WHERE h.telegram_chat_id_hash = $1`, [hash]);
+        return mapHostRow(result.rows[0]);
     }
 
     /**
@@ -86,7 +96,7 @@ export class HostRepository {
              WHERE id = $${idx} RETURNING *`,
             params
         );
-        return result.rows[0] || null;
+        return mapHostRow(result.rows[0]);
     }
 
     async delete(id: number): Promise<boolean> {
@@ -119,7 +129,7 @@ export class HostRepository {
     async findPendingRegistrationCode(hostId: number): Promise<string | null> {
         const result = await query(
             `SELECT code FROM host_registration_codes
-             WHERE host_id = $1 AND used_at IS NULL
+             WHERE host_id = $1 AND used_at IS NULL AND expires_at > NOW()
              ORDER BY created_at DESC LIMIT 1`,
             [hostId]
         );
@@ -133,10 +143,13 @@ export class HostRepository {
         normalizedCode: string,
         telegramChatId: string,
     ): Promise<'ok' | 'invalid_code' | 'chat_already_host' | 'host_already_active' | 'concurrent'> {
+        const hash = hashChatId(telegramChatId);
+        const encrypted = encrypt(telegramChatId);
+
         return withTransaction(async (client) => {
             const codeRes = await client.query<{ id: number; host_id: number }>(
                 `SELECT id, host_id FROM host_registration_codes
-                 WHERE code = $1 AND used_at IS NULL
+                 WHERE code = $1 AND used_at IS NULL AND expires_at > NOW()
                  FOR UPDATE`,
                 [normalizedCode]
             );
@@ -147,24 +160,25 @@ export class HostRepository {
             const hostId    = codeRow.host_id;
 
             const taken = await client.query(
-                'SELECT id FROM hosts WHERE telegram_chat_id = $1',
-                [telegramChatId]
+                'SELECT id FROM hosts WHERE telegram_chat_id_hash = $1',
+                [hash]
             );
             if ((taken.rowCount ?? 0) > 0) return 'chat_already_host';
 
-            const hostRes = await client.query<{ telegram_chat_id: string | null }>(
-                'SELECT telegram_chat_id FROM hosts WHERE id = $1 FOR UPDATE',
+            const hostRes = await client.query<{ telegram_chat_id_hash: string | null }>(
+                'SELECT telegram_chat_id_hash FROM hosts WHERE id = $1 FOR UPDATE',
                 [hostId]
             );
             if (hostRes.rowCount === 0) return 'invalid_code';
-            if (hostRes.rows[0].telegram_chat_id) return 'host_already_active';
+            if (hostRes.rows[0].telegram_chat_id_hash) return 'host_already_active';
 
             const upd = await client.query(
                 `UPDATE hosts
-                 SET telegram_chat_id = $1, activated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                 WHERE id = $2 AND telegram_chat_id IS NULL
+                 SET telegram_chat_id = $1, telegram_chat_id_hash = $2, 
+                     activated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $3 AND telegram_chat_id_hash IS NULL
                  RETURNING id`,
-                [telegramChatId, hostId]
+                [encrypted, hash, hostId]
             );
             if (upd.rowCount === 0) return 'concurrent';
 
@@ -172,7 +186,7 @@ export class HostRepository {
                 `UPDATE host_registration_codes
                  SET used_at = CURRENT_TIMESTAMP, used_telegram_chat_id = $1
                  WHERE id = $2`,
-                [telegramChatId, codeId]
+                [encrypted, codeId]
             );
             return 'ok';
         });

@@ -14,6 +14,8 @@ import { formatDate } from '../utils/format';
 
 export default function HostsPage() {
     const [createOpen, setCreateOpen]   = useState(false);
+    const [deleteOpen, setDeleteOpen]   = useState(false);
+    const [hostToDelete, setHostToDelete] = useState<Host | null>(null);
     const [fullName, setFullName]       = useState('');
     const [nameError, setNameError]     = useState('');
     const [copiedId, setCopiedId]       = useState<number | null>(null);
@@ -101,6 +103,19 @@ export default function HostsPage() {
         setCreateOpen(false);
         setFullName('');
         setNameError('');
+    };
+
+    const handleDeleteClick = (host: Host) => {
+        setHostToDelete(host);
+        setDeleteOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (hostToDelete) {
+            deleteHost(hostToDelete.id);
+            setDeleteOpen(false);
+            setHostToDelete(null);
+        }
     };
 
     return (
@@ -197,7 +212,7 @@ export default function HostsPage() {
                                         <TableCell>
                                             <Button size="small" variant="text"
                                                 color="error"
-                                                onClick={() => { if (confirm(`Hapus ${host.full_name}?`)) deleteHost(host.id); }}>
+                                                onClick={() => handleDeleteClick(host)}>
                                                 Hapus
                                             </Button>
                                         </TableCell>
@@ -248,6 +263,25 @@ export default function HostsPage() {
                         disabled={!fullName.trim() || !!validateName(fullName) || creating}
                         onClick={() => createHost()}>
                         Buat Host
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Konfirmasi Hapus</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ fontSize: '0.9rem', color: '#374151' }}>
+                        Apakah Anda yakin ingin menghapus host <strong>{hostToDelete?.full_name}</strong>?
+                        Tindakan ini tidak dapat dibatalkan.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ pb: 2, px: 3 }}>
+                    <Button onClick={() => setDeleteOpen(false)} sx={{ color: '#6b7280' }}>
+                        Batal
+                    </Button>
+                    <Button variant="contained" color="error" onClick={confirmDelete}>
+                        Hapus
                     </Button>
                 </DialogActions>
             </Dialog>
