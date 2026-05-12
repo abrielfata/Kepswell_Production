@@ -10,4 +10,6 @@ export const ENV = {
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN!,
     OCRSPACE_API_KEY: process.env.OCRSPACE_API_KEY!,
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+    CHAT_ID_SALT: process.env.CHAT_ID_SALT!,
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY!,
 };

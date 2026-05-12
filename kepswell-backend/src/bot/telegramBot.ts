@@ -12,6 +12,21 @@ const hostService = new HostService();
 const reportRepo  = new ReportRepository();
 const BASE_URL   = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
 
+// ── Rate Limiting (5 attempts per hour) ───────────────────────────────────────
+const attempts = new Map<string, { count: number; resetAt: number }>();
+
+const checkRateLimit = (chatId: string): boolean => {
+    const now = Date.now();
+    const entry = attempts.get(chatId);
+    if (!entry || now > entry.resetAt) {
+        attempts.set(chatId, { count: 1, resetAt: now + 3600_000 });
+        return true;
+    }
+    if (entry.count >= 5) return false;
+    entry.count++;
+    return true;
+};
+
 const sendMessage = async (chatId: number | string, text: string) => {
     await axios.post(`${BASE_URL}/sendMessage`, {
         chat_id:    chatId,
@@ -116,6 +131,11 @@ export const processUpdate = async (update: any) => {
             await sendMessage(chatId,
                 'Gunakan: `/daftar KODE`\n\nKode diberikan Manager setelah Anda didaftarkan.'
             );
+            return;
+        }
+
+        if (!checkRateLimit(telegramChatId)) {
+            await sendMessage(chatId, '⚠️ Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.');
             return;
         }
 
