@@ -73,8 +73,7 @@ export default function HostsPage() {
         },
     });
 
-        },
-    });
+
 
     const { mutate: deleteHost } = useMutation({
         mutationFn: (id: number) => hostsAPI.delete(id),
