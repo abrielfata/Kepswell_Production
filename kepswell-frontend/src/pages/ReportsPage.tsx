@@ -4,7 +4,7 @@ import {
     TableCell, TableContainer, TableHead, TableRow, Paper,
     Chip, Button, Select, MenuItem, FormControl,
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TextField, TablePagination, Stack
+    TablePagination, Stack
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportsAPI } from '../api/reports';
@@ -30,7 +30,6 @@ export default function ReportsPage() {
     const [statusFilter, setStatusFilter]     = useState('');
     const [monthFilter, setMonthFilter]       = useState<number | ''>('');
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-    const [notes, setNotes]                   = useState('');
 
     const queryClient = useQueryClient();
     const { showNotification } = useNotification();
@@ -59,7 +58,6 @@ export default function ReportsPage() {
             queryClient.invalidateQueries({ queryKey: ['statistics'] });
             queryClient.invalidateQueries({ queryKey: ['ranking'] });
             setSelectedReport(null);
-            setNotes('');
             const label = vars.status === 'APPROVED' ? 'disetujui' : 'ditolak';
             showNotification(`Laporan berhasil ${label}`, 'success');
         },
@@ -186,27 +184,17 @@ export default function ReportsPage() {
                             </Box>
                         ))}
 
-                        <Box sx={{ borderTop: '1px solid #e5e7eb', pt: 1.5 }}>
-                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#374151', mb: 0.75 }}>
-                                Catatan (opsional)
-                            </Typography>
-                            <TextField
-                                multiline rows={2} fullWidth
-                                placeholder="Tambahkan catatan..."
-                                value={notes}
-                                onChange={e => setNotes(e.target.value)}
-                            />
-                        </Box>
+
                     </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setSelectedReport(null)} sx={{ color: '#6b7280' }}>Batal</Button>
                     <Button variant="outlined" color="error" disabled={isPending}
-                        onClick={() => updateStatus({ id: selectedReport!.id, status: 'REJECTED', notes })}>
+                        onClick={() => updateStatus({ id: selectedReport!.id, status: 'REJECTED' })}>
                         Tolak
                     </Button>
                     <Button variant="contained" color="success" disabled={isPending}
-                        onClick={() => updateStatus({ id: selectedReport!.id, status: 'APPROVED', notes })}>
+                        onClick={() => updateStatus({ id: selectedReport!.id, status: 'APPROVED' })}>
                         Setujui
                     </Button>
                 </DialogActions>
