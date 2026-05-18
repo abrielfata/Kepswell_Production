@@ -5,7 +5,7 @@ import {
     Chip, Button, Dialog, DialogTitle, DialogContent,
     DialogActions, TextField, IconButton, Tooltip, Alert
 } from '@mui/material';
-import { ContentCopy, Check, Refresh } from '@mui/icons-material';
+import { ContentCopy, Check } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hostsAPI } from '../api/hosts';
 import { useNotification } from '../contexts/NotificationContext';
@@ -73,13 +73,7 @@ export default function HostsPage() {
         },
     });
 
-    const { mutate: regenerateCode } = useMutation({
-        mutationFn: (id: number) => hostsAPI.regenerateRegistrationCode(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['hosts'] });
-            showNotification('Kode registrasi berhasil diganti', 'success');
         },
-        onError: () => showNotification('Gagal memperbarui kode', 'error'),
     });
 
     const { mutate: deleteHost } = useMutation({
@@ -190,22 +184,9 @@ export default function HostsPage() {
                                                             }
                                                         </IconButton>
                                                     </Tooltip>
-                                                    <Tooltip title="Ganti kode baru (kode lama tidak berlaku)">
-                                                        <IconButton size="small" onClick={() => regenerateCode(host.id)}
-                                                            sx={{ color: '#9ca3af' }}>
-                                                            <Refresh sx={{ fontSize: 16 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
                                                 </Box>
-                                            ) : host.telegram_chat_id ? (
-                                                <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>—</Typography>
                                             ) : (
-                                                <Tooltip title="Muat ulang atau buat kode">
-                                                    <IconButton size="small" onClick={() => regenerateCode(host.id)}
-                                                        sx={{ color: '#9ca3af' }}>
-                                                        <Refresh sx={{ fontSize: 16 }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>—</Typography>
                                             )}
                                         </TableCell>
                                         <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>

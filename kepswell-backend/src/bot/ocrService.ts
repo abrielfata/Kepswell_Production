@@ -8,7 +8,7 @@ interface OcrResult {
     rawText: string;
     parsedGMV: number;
     parsedDurationMinutes: number;
-    platform: 'TIKTOK' | 'SHOPEE';
+    platform: 'TIKTOK';
     error?: string;
 }
 
@@ -64,11 +64,8 @@ const parseDurationMinutes = (text: string): number => {
 };
 
 
-const detectPlatform = (text: string): 'TIKTOK' | 'SHOPEE' => {
-    const upper = text.toUpperCase();
-    if (upper.includes('SHOPEE') || upper.includes('PENJUALAN') || upper.includes('PRODUK TERJUAL')) {
-        return 'SHOPEE';
-    }
+const detectPlatform = (text: string): 'TIKTOK' => {
+    // Fokus hanya pada TikTok Shop
     return 'TIKTOK';
 };
 
@@ -99,7 +96,7 @@ export const extractFromImage = async (imagePath: string): Promise<OcrResult> =>
             rawText,
             parsedGMV:             parseGMV(rawText),
             parsedDurationMinutes: parseDurationMinutes(rawText),
-            platform:              detectPlatform(rawText),
+            platform:              'TIKTOK',
         };
     } catch (err: any) {
         return {
@@ -111,4 +108,5 @@ export const extractFromImage = async (imagePath: string): Promise<OcrResult> =>
             error:                 err.message,
         };
     }
+
 };

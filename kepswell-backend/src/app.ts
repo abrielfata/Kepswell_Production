@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import { ENV } from './config/env';
 import { errorHandler } from './middleware/errorMiddleware';
 import authRoutes   from './routes/authRoutes';
@@ -10,6 +11,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 const VERCEL_PATTERN = /^https:\/\/kepswell.*\.vercel\.app$/;
 
