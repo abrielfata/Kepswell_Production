@@ -131,19 +131,6 @@ export class HostService {
         await this.hostRepo.delete(id);
     }
 
-    /** Host belum aktivasi: buang kode belum terpakai, buat kode baru (sekali pakai). */
-    async regenerateRegistrationCode(id: number): Promise<HostRow> {
-        const host = await this.hostRepo.findById(id);
-        if (!host) throw { status: 404, message: 'Host tidak ditemukan' };
-        if (host.telegram_chat_id) {
-            throw { status: 400, message: 'Host sudah aktif; kode registrasi tidak dapat diganti' };
-        }
-
-        await this.hostRepo.deleteUnusedRegistrationCodesForHost(id);
-        const code = await this.generateUniqueRegistrationCode();
-        await this.hostRepo.insertRegistrationCode(id, code);
-        return { ...host, pending_registration_code: code };
-    }
 
     /** Dipanggil dari bot Telegram setelah validasi input. */
     async activateByRegistrationCode(rawCode: string, telegramChatId: string) {

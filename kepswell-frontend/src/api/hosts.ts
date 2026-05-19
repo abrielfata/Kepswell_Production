@@ -8,6 +8,4 @@ export const hostsAPI = {
     update: (id: number, data: { full_name?: string }) =>
         api.put(`/hosts/${id}`, data),
     delete: (id: number) => api.delete(`/hosts/${id}`),
-    regenerateRegistrationCode: (id: number) =>
-        api.patch(`/hosts/${id}/regenerate-registration-code`),
 };

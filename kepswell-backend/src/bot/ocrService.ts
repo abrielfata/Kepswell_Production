@@ -8,7 +8,7 @@ export interface OcrResult {
     rawText: string;
     parsedGMV: number;
     parsedDurationMinutes: number;
-    platform: 'TIKTOK' | 'SHOPEE';
+    platform: 'TIKTOK';
     error?: string;
 }
 
@@ -58,11 +58,8 @@ export class OCRService {
         return 0;
     }
 
-    private detectPlatform(text: string): 'TIKTOK' | 'SHOPEE' {
-        const upper = text.toUpperCase();
-        if (upper.includes('SHOPEE') || upper.includes('PENJUALAN') || upper.includes('PRODUK TERJUAL')) {
-            return 'SHOPEE';
-        }
+    private detectPlatform(text: string): 'TIKTOK' {
+        // Fokus hanya pada TikTok Shop (sesuai spesifikasi main branch)
         return 'TIKTOK';
     }
 
