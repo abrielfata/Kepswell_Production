@@ -125,11 +125,10 @@ export class HostService {
         return this.hostRepo.update(id, data);
     }
 
-    async delete(id: number) {
+    async delete(id: number): Promise<void> {
         const existing = await this.hostRepo.findById(id);
         if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
         await this.hostRepo.delete(id);
-        return { message: 'Host berhasil dihapus' };
     }
 
 
