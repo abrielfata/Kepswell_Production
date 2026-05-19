@@ -53,7 +53,7 @@ function validateHostName(name: string): void {
 export class HostService {
     private hostRepo = new HostRepository();
 
-    private async generateUniqueRegistrationCode(): Promise<string> {
+    private async generateRegistrationCode(): Promise<string> {
         const maxAttempts = 50;
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             const code = crypto.randomBytes(6).toString('hex').toUpperCase();
@@ -71,7 +71,7 @@ export class HostService {
         if (host.telegram_chat_id) return host;
         const existing = await this.hostRepo.findPendingRegistrationCode(host.id);
         if (existing) return { ...host, pending_registration_code: existing };
-        const code = await this.generateUniqueRegistrationCode();
+        const code = await this.generateRegistrationCode();
         await this.hostRepo.insertRegistrationCode(host.id, code);
         return { ...host, pending_registration_code: code };
     }
@@ -104,7 +104,7 @@ export class HostService {
         // host_code di-generate otomatis di repository (KSW-XXXX dari id)
         // Tidak ada cek duplikat nama — host_code yang menjadi pembeda unik
         const host = await this.hostRepo.create({ full_name: normalized });
-        const code = await this.generateUniqueRegistrationCode();
+        const code = await this.generateRegistrationCode();
         await this.hostRepo.insertRegistrationCode(host.id, code);
         return { ...host, pending_registration_code: code };
     }
