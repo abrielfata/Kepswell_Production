@@ -6,81 +6,64 @@ import { ENV } from '../config/env';
 import { HostRepository } from '../repositories/HostRepository';
 import { ReportRepository } from '../repositories/ReportRepository';
 import { HostService } from '../services/HostService';
-import { extractFromImage } from './ocrService';
+import { OCRService } from './ocrService';
 
-const hostRepo    = new HostRepository();
-const hostService = new HostService();
-const reportRepo  = new ReportRepository();
-const BASE_URL   = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-// ── Rate Limiting (5 attempts per hour) ───────────────────────────────────────
-const attempts = new Map<string, { count: number; resetAt: number }>();
+export interface NotifyStatusParams {
+    host_id:   number;
+    report_id: number;
+    status:    'APPROVED' | 'REJECTED';
+    gmv:       number;
+    duration:  number;
+    platform:  string;
+    notes?:    string;
+}
 
-const checkRateLimit = (chatId: string): boolean => {
-    const now = Date.now();
-    const entry = attempts.get(chatId);
-    if (!entry || now > entry.resetAt) {
-        attempts.set(chatId, { count: 1, resetAt: now + 3600_000 });
-        return true;
+// ── TelegramBot Class ─────────────────────────────────────────────────────────
+
+export class TelegramBot {
+    private readonly BASE_URL = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
+
+    private readonly hostRepo    = new HostRepository();
+    private readonly hostService = new HostService();
+    private readonly reportRepo  = new ReportRepository();
+    private readonly ocrService  = new OCRService();
+
+    private readonly pendingReports = new Map<string, any>();
+    private readonly attempts       = new Map<string, { count: number; resetAt: number }>();
+
+    private pollingOffset = 0;
+    private pollingActive = false;
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+
+    private isRateLimited(chatId: string): boolean {
+        const now   = Date.now();
+        const entry = this.attempts.get(chatId);
+        if (!entry || now > entry.resetAt) {
+            this.attempts.set(chatId, { count: 1, resetAt: now + 3_600_000 });
+            return false;
+        }
+        if (entry.count >= 5) return true;
+        entry.count++;
+        return false;
     }
-    if (entry.count >= 5) return false;
-    entry.count++;
-    return true;
-};
 
-const sendMessage = async (chatId: number | string, text: string) => {
-    await axios.post(`${BASE_URL}/sendMessage`, {
-        chat_id:    chatId,
-        text,
-        parse_mode: 'Markdown',
-    }).catch(err => console.error('Send message error:', err.message));
-};
-
-// Kirim notifikasi ke host saat laporan di-approve/reject oleh manager
-export const notifyHostStatusUpdate = async (params: {
-    host_id:    number;
-    report_id:  number;
-    status:     'APPROVED' | 'REJECTED';
-    gmv:        number;
-    duration:   number;
-    platform:   string;
-    notes?:     string;
-}) => {
-    const host = await hostRepo.findById(params.host_id);
-    if (!host?.telegram_chat_id) return;
-
-    const gmvFormatted = new Intl.NumberFormat('id-ID', {
-        style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
-    }).format(params.gmv);
-
-    const durasiText = `${Math.floor(params.duration / 60)}j ${params.duration % 60}m`;
-
-    if (params.status === 'APPROVED') {
-        await sendMessage(
-            host.telegram_chat_id,
-            `✅ *Laporan #${params.report_id} Disetujui!*\n\n` +
-            `Platform : ${params.platform}\n` +
-            `GMV      : ${gmvFormatted}\n` +
-            `Durasi   : ${durasiText}\n` +
-            (params.notes ? `\nCatatan  : ${params.notes}` : '') +
-            `\n\nTerima kasih! Data Anda telah dicatat. 🎉`
-        );
-    } else {
-        await sendMessage(
-            host.telegram_chat_id,
-            `❌ *Laporan #${params.report_id} Ditolak*\n\n` +
-            `Platform : ${params.platform}\n` +
-            `GMV      : ${gmvFormatted}\n` +
-            `Durasi   : ${durasiText}\n` +
-            (params.notes ? `\nAlasan   : ${params.notes}` : '') +
-            `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`
-        );
+    private async sendMessage(chatId: number | string, text: string): Promise<void> {
+        await axios.post(`${this.BASE_URL}/sendMessage`, {
+            chat_id:    chatId,
+            text,
+            parse_mode: 'Markdown',
+        }).catch(err => console.error('Send message error:', err.message));
     }
-};
 
-const downloadPhoto = async (fileId: string): Promise<string | null> => {
-    try {
-        const fileRes  = await axios.get(`${BASE_URL}/getFile?file_id=${fileId}`);
+    /**
+     * Mengunduh foto dari Telegram dan menyimpan ke lokal.
+     * Melempar Error jika unduhan gagal (fail-fast — tidak return null).
+     */
+    private async downloadPhoto(fileId: string): Promise<string> {
+        const fileRes  = await axios.get(`${this.BASE_URL}/getFile?file_id=${fileId}`);
         const filePath = fileRes.data.result.file_path;
         const fileUrl  = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${filePath}`;
         const imgRes   = await axios.get(fileUrl, { responseType: 'arraybuffer' });
@@ -92,238 +75,277 @@ const downloadPhoto = async (fileId: string): Promise<string | null> => {
         const savePath = path.join(uploadsDir, filename);
         fs.writeFileSync(savePath, imgRes.data);
         return filename;
-    } catch (err) {
-        console.error('Download photo error:', err);
-        return null;
-    }
-};
-
-const pendingReports = new Map<string, any>();
-
-export const processUpdate = async (update: any) => {
-    const message = update.message;
-    if (!message) return;
-
-    const chatId           = message.chat.id;
-    const telegramChatId = String(message.chat.id);
-    const text             = message.text?.trim();
-
-    // /start
-    if (text === '/start') {
-        const host = await hostRepo.findByTelegramChatId(telegramChatId);
-        if (!host) {
-            await sendMessage(chatId,
-                '👋 Selamat datang!\n\nAnda belum terhubung sebagai host.\n' +
-                'Minta *kode registrasi* ke Manager, lalu kirim:\n`/daftar KODE`'
-            );
-        } else if (!host.is_active) {
-            await sendMessage(chatId, '❌ Akun Anda dinonaktifkan. Hubungi Manager.');
-        } else {
-            await sendMessage(chatId,
-                `✅ Halo *${host.full_name}*!\n\nKirimkan screenshot laporan GMV Anda.`
-            );
-        }
-        return;
     }
 
-    // /daftar KODE (sekali pakai)
-    if (text && /^\/daftar\b/i.test(text)) {
-        const match = text.match(/^\/daftar\s+(.+)$/i);
-        const rawCode = match ? match[1].trim() : '';
-        if (!rawCode) {
-            await sendMessage(chatId,
-                'Gunakan: `/daftar KODE`\n\nKode diberikan Manager setelah Anda didaftarkan.'
-            );
-            return;
-        }
+    // ── Public methods ─────────────────────────────────────────────────────────
 
-        if (!checkRateLimit(telegramChatId)) {
-            await sendMessage(chatId, '⚠️ Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.');
-            return;
-        }
-
-        const { status } = await hostService.activateByRegistrationCode(rawCode, telegramChatId);
-
-        if (status === 'ok') {
-            const host = await hostRepo.findByTelegramChatId(telegramChatId);
-            await sendMessage(chatId,
-                `✅ Berhasil! Akun *${host?.full_name ?? 'host'}* telah terhubung.\n\n` +
-                `Kirimkan screenshot GMV untuk mulai laporan.`
-            );
-            return;
-        }
-        if (status === 'invalid_code') {
-            await sendMessage(chatId, '❌ Kode tidak valid atau sudah dipakai.');
-            return;
-        }
-        if (status === 'chat_already_host') {
-            await sendMessage(chatId, '⚠️ Chat Telegram ini sudah terdaftar sebagai host.');
-            return;
-        }
-        if (status === 'host_already_active') {
-            await sendMessage(chatId, '⚠️ Host ini sudah diaktivasi sebelumnya.');
-            return;
-        }
-        await sendMessage(chatId, '❌ Aktivasi gagal. Coba lagi atau hubungi Manager.');
-        return;
-    }
-
-    // Konfirmasi Y/N
-    if (pendingReports.has(telegramChatId)) {
-        const pending  = pendingReports.get(telegramChatId);
-        const response = text?.toUpperCase();
-
-        if (response === 'Y' || response === 'YA') {
-            const now = new Date();
-            await reportRepo.create({
-                host_id:               pending.host_id,
-                platform:              pending.platform,
-                reported_gmv:          pending.gmv,
-                live_duration_minutes: pending.duration,
-                screenshot_url:        pending.screenshotUrl,
-                ocr_raw_text:          pending.rawText,
-                month:                 now.getMonth() + 1,
-                year:                  now.getFullYear(),
-            });
-
-            pendingReports.delete(telegramChatId);
-
-            const gmvFormatted = new Intl.NumberFormat('id-ID', {
-                style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
-            }).format(pending.gmv);
-
-            await sendMessage(chatId,
-                `✅ *Laporan Tersimpan!*\n\n` +
-                `Platform : ${pending.platform}\n` +
-                `GMV      : ${gmvFormatted}\n` +
-                `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n\n` +
-                `Status: *PENDING* — menunggu verifikasi manager.`
-            );
-        } else if (response === 'N' || response === 'TIDAK') {
-            pendingReports.delete(telegramChatId);
-            await sendMessage(chatId, '❌ Laporan dibatalkan. Kirim screenshot baru.');
-        } else {
-            await sendMessage(chatId, 'Ketik *Y* untuk simpan atau *N* untuk batal.');
-        }
-        return;
-    }
-
-    // Photo
-    if (message.photo) {
-        const host = await hostRepo.findByTelegramChatId(telegramChatId);
-
-        if (!host) {
-            await sendMessage(chatId,
-                '❌ Akun host Anda belum diaktivasi.\n' +
-                'Minta kode registrasi ke Manager lalu kirim `/daftar KODE` atau ketik /start.'
-            );
-            return;
-        }
-        if (!host.is_active) {
-            await sendMessage(chatId, '❌ Akun Anda dinonaktifkan.');
-            return;
-        }
-
-        await sendMessage(chatId, '⏳ Memproses screenshot...');
-
-        const photo    = message.photo[message.photo.length - 1];
-        const filename = await downloadPhoto(photo.file_id);
-
-        if (!filename) {
-            await sendMessage(chatId, '❌ Gagal mengunduh foto. Coba lagi.');
-            return;
-        }
-
-        const uploadsDir = path.join(__dirname, '../uploads');
-        const localPath  = path.join(uploadsDir, filename);
-        const ocr = await extractFromImage(localPath);
-
-        if (!ocr.success) {
-            await sendMessage(chatId, `❌ Gagal membaca teks.\n${ocr.error}`);
-            return;
-        }
+    async notifyHostStatusUpdate(params: NotifyStatusParams): Promise<void> {
+        const host = await this.hostRepo.findById(params.host_id);
+        if (!host?.telegram_chat_id) return;
 
         const gmvFormatted = new Intl.NumberFormat('id-ID', {
             style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
-        }).format(ocr.parsedGMV);
+        }).format(params.gmv);
 
-        const durasiText = ocr.parsedDurationMinutes > 0
-            ? `${Math.floor(ocr.parsedDurationMinutes / 60)}j ${ocr.parsedDurationMinutes % 60}m`
-            : 'Tidak terdeteksi';
+        const durasiText = `${Math.floor(params.duration / 60)}j ${params.duration % 60}m`;
 
-        const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
-
-        pendingReports.set(telegramChatId, {
-            host_id:      host.id,
-            platform:     ocr.platform,
-            gmv:          ocr.parsedGMV,
-            duration:     ocr.parsedDurationMinutes,
-            rawText:      ocr.rawText,
-            screenshotUrl,
-        });
-
-        await sendMessage(chatId,
-            `✅ *Screenshot Diproses!*\n\n` +
-            `Platform : ${ocr.platform}\n` +
-            `GMV      : ${gmvFormatted}\n` +
-            `Durasi   : ${durasiText}\n\n` +
-            `Ketik *Y* untuk simpan atau *N* untuk batal.`
-        );
-        return;
+        if (params.status === 'APPROVED') {
+            await this.sendMessage(
+                host.telegram_chat_id,
+                `✅ *Laporan #${params.report_id} Disetujui!*\n\n` +
+                `Platform : ${params.platform}\n` +
+                `GMV      : ${gmvFormatted}\n` +
+                `Durasi   : ${durasiText}\n` +
+                (params.notes ? `\nCatatan  : ${params.notes}` : '') +
+                `\n\nTerima kasih! Data Anda telah dicatat. 🎉`
+            );
+        } else {
+            await this.sendMessage(
+                host.telegram_chat_id,
+                `❌ *Laporan #${params.report_id} Ditolak*\n\n` +
+                `Platform : ${params.platform}\n` +
+                `GMV      : ${gmvFormatted}\n` +
+                `Durasi   : ${durasiText}\n` +
+                (params.notes ? `\nAlasan   : ${params.notes}` : '') +
+                `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`
+            );
+        }
     }
 
-    await sendMessage(chatId, 'Kirim *screenshot GMV*, `/daftar KODE`, atau ketik /start');
-};
+    async processUpdate(update: any): Promise<void> {
+        const message = update.message;
+        if (!message) return;
 
-export const setupWebhook = async (webhookUrl: string) => {
-    const res = await axios.post(`${BASE_URL}/setWebhook`, {
-        url:             webhookUrl,
-        allowed_updates: ['message'],
-    });
-    console.log('🤖 Webhook set:', res.data.ok);
-};
+        const chatId         = message.chat.id;
+        const telegramChatId = String(message.chat.id);
+        const text           = message.text?.trim();
 
-export const deleteWebhook = async () => {
-    await axios.post(`${BASE_URL}/deleteWebhook`);
-    console.log('🤖 Webhook deleted (polling mode aktif)');
-};
+        // /start
+        if (text === '/start') {
+            const host = await this.hostRepo.findByTelegramChatId(telegramChatId);
+            if (!host) {
+                await this.sendMessage(chatId,
+                    '👋 Selamat datang!\n\nAnda belum terhubung sebagai host.\n' +
+                    'Minta *kode registrasi* ke Manager, lalu kirim:\n`/daftar KODE`'
+                );
+            } else if (!host.is_active) {
+                await this.sendMessage(chatId, '❌ Akun Anda dinonaktifkan. Hubungi Manager.');
+            } else {
+                await this.sendMessage(chatId,
+                    `✅ Halo *${host.full_name}*!\n\nKirimkan screenshot laporan GMV Anda.`
+                );
+            }
+            return;
+        }
 
-let pollingOffset = 0;
-let pollingActive = false;
+        // /daftar KODE
+        if (text && /^\/daftar\b/i.test(text)) {
+            const match   = text.match(/^\/daftar\s+(.+)$/i);
+            const rawCode = match ? match[1].trim() : '';
+            if (!rawCode) {
+                await this.sendMessage(chatId,
+                    'Gunakan: `/daftar KODE`\n\nKode diberikan Manager setelah Anda didaftarkan.'
+                );
+                return;
+            }
 
-export const startPolling = async () => {
-    if (pollingActive) return;
-    pollingActive = true;
+            if (this.isRateLimited(telegramChatId)) {
+                await this.sendMessage(chatId, '⚠️ Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.');
+                return;
+            }
 
-    // Hapus webhook dulu agar polling bisa berjalan
-    await deleteWebhook();
-    console.log('🤖 Bot polling dimulai...');
+            const { status } = await this.hostService.activateByRegistrationCode(rawCode, telegramChatId);
 
-    const poll = async () => {
-        if (!pollingActive) return;
-        try {
-            const res = await axios.get(`${BASE_URL}/getUpdates`, {
-                params: {
-                    offset:          pollingOffset,
-                    timeout:         10,
-                    allowed_updates: ['message'],
-                },
-                timeout: 15000,
+            if (status === 'ok') {
+                const host = await this.hostRepo.findByTelegramChatId(telegramChatId);
+                await this.sendMessage(chatId,
+                    `✅ Berhasil! Akun *${host?.full_name ?? 'host'}* telah terhubung.\n\n` +
+                    `Kirimkan screenshot GMV untuk mulai laporan.`
+                );
+                return;
+            }
+            if (status === 'invalid_code') {
+                await this.sendMessage(chatId, '❌ Kode tidak valid atau sudah dipakai.');
+                return;
+            }
+            if (status === 'chat_already_host') {
+                await this.sendMessage(chatId, '⚠️ Chat Telegram ini sudah terdaftar sebagai host.');
+                return;
+            }
+            if (status === 'host_already_active') {
+                await this.sendMessage(chatId, '⚠️ Host ini sudah diaktivasi sebelumnya.');
+                return;
+            }
+            await this.sendMessage(chatId, '❌ Aktivasi gagal. Coba lagi atau hubungi Manager.');
+            return;
+        }
+
+        // Konfirmasi Y/N
+        if (this.pendingReports.has(telegramChatId)) {
+            const pending  = this.pendingReports.get(telegramChatId);
+            const response = text?.toUpperCase();
+
+            if (response === 'Y' || response === 'YA') {
+                const now = new Date();
+                await this.reportRepo.create({
+                    host_id:               pending.host_id,
+                    platform:              pending.platform,
+                    reported_gmv:          pending.gmv,
+                    live_duration_minutes: pending.duration,
+                    screenshot_url:        pending.screenshotUrl,
+                    ocr_raw_text:          pending.rawText,
+                    month:                 now.getMonth() + 1,
+                    year:                  now.getFullYear(),
+                });
+
+                this.pendingReports.delete(telegramChatId);
+
+                const gmvFormatted = new Intl.NumberFormat('id-ID', {
+                    style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+                }).format(pending.gmv);
+
+                await this.sendMessage(chatId,
+                    `✅ *Laporan Tersimpan!*\n\n` +
+                    `Platform : ${pending.platform}\n` +
+                    `GMV      : ${gmvFormatted}\n` +
+                    `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n\n` +
+                    `Status: *PENDING* — menunggu verifikasi manager.`
+                );
+            } else if (response === 'N' || response === 'TIDAK') {
+                this.pendingReports.delete(telegramChatId);
+                await this.sendMessage(chatId, '❌ Laporan dibatalkan. Kirim screenshot baru.');
+            } else {
+                await this.sendMessage(chatId, 'Ketik *Y* untuk simpan atau *N* untuk batal.');
+            }
+            return;
+        }
+
+        // Photo
+        if (message.photo) {
+            const host = await this.hostRepo.findByTelegramChatId(telegramChatId);
+
+            if (!host) {
+                await this.sendMessage(chatId,
+                    '❌ Akun host Anda belum diaktivasi.\n' +
+                    'Minta kode registrasi ke Manager lalu kirim `/daftar KODE` atau ketik /start.'
+                );
+                return;
+            }
+            if (!host.is_active) {
+                await this.sendMessage(chatId, '❌ Akun Anda dinonaktifkan.');
+                return;
+            }
+
+            await this.sendMessage(chatId, '⏳ Memproses screenshot...');
+
+            const photo = message.photo[message.photo.length - 1];
+
+            let filename: string;
+            try {
+                filename = await this.downloadPhoto(photo.file_id);
+            } catch (err) {
+                await this.sendMessage(chatId, '❌ Gagal mengunduh foto. Coba lagi.');
+                return;
+            }
+
+            const uploadsDir = path.join(__dirname, '../uploads');
+            const localPath  = path.join(uploadsDir, filename);
+            const ocr        = await this.ocrService.extractFromImage(localPath);
+
+            if (!ocr.success) {
+                await this.sendMessage(chatId, `❌ Gagal membaca teks.\n${ocr.error}`);
+                return;
+            }
+
+            const gmvFormatted = new Intl.NumberFormat('id-ID', {
+                style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+            }).format(ocr.parsedGMV);
+
+            const durasiText = ocr.parsedDurationMinutes > 0
+                ? `${Math.floor(ocr.parsedDurationMinutes / 60)}j ${ocr.parsedDurationMinutes % 60}m`
+                : 'Tidak terdeteksi';
+
+            const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
+
+            this.pendingReports.set(telegramChatId, {
+                host_id:      host.id,
+                platform:     ocr.platform,
+                gmv:          ocr.parsedGMV,
+                duration:     ocr.parsedDurationMinutes,
+                rawText:      ocr.rawText,
+                screenshotUrl,
             });
 
-            const updates: any[] = res.data.result || [];
-            for (const update of updates) {
-                pollingOffset = update.update_id + 1;
-                processUpdate(update).catch(console.error);
-            }
-        } catch (err: any) {
-            if (err.code !== 'ECONNABORTED') {
-                console.error('Polling error:', err.message);
-            }
+            await this.sendMessage(chatId,
+                `✅ *Screenshot Diproses!*\n\n` +
+                `Platform : ${ocr.platform}\n` +
+                `GMV      : ${gmvFormatted}\n` +
+                `Durasi   : ${durasiText}\n\n` +
+                `Ketik *Y* untuk simpan atau *N* untuk batal.`
+            );
+            return;
         }
-        // Tunggu 1 detik lalu poll lagi
-        setTimeout(poll, 1000);
-    };
 
-    poll();
-};
+        await this.sendMessage(chatId, 'Kirim *screenshot GMV*, `/daftar KODE`, atau ketik /start');
+    }
+
+    // ── Webhook & Polling ──────────────────────────────────────────────────────
+
+    async setupWebhook(webhookUrl: string): Promise<void> {
+        const res = await axios.post(`${this.BASE_URL}/setWebhook`, {
+            url:             webhookUrl,
+            allowed_updates: ['message'],
+        });
+        console.log('🤖 Webhook set:', res.data.ok);
+    }
+
+    async deleteWebhook(): Promise<void> {
+        await axios.post(`${this.BASE_URL}/deleteWebhook`);
+        console.log('🤖 Webhook deleted (polling mode aktif)');
+    }
+
+    async startPolling(): Promise<void> {
+        if (this.pollingActive) return;
+        this.pollingActive = true;
+
+        await this.deleteWebhook();
+        console.log('🤖 Bot polling dimulai...');
+
+        const poll = async () => {
+            if (!this.pollingActive) return;
+            try {
+                const res = await axios.get(`${this.BASE_URL}/getUpdates`, {
+                    params: {
+                        offset:          this.pollingOffset,
+                        timeout:         10,
+                        allowed_updates: ['message'],
+                    },
+                    timeout: 15000,
+                });
+
+                const updates: any[] = res.data.result || [];
+                for (const update of updates) {
+                    this.pollingOffset = update.update_id + 1;
+                    this.processUpdate(update).catch(console.error);
+                }
+            } catch (err: any) {
+                if (err.code !== 'ECONNABORTED') {
+                    console.error('Polling error:', err.message);
+                }
+            }
+            setTimeout(poll, 1000);
+        };
+
+        poll();
+    }
+}
+
+// ── Singleton ─────────────────────────────────────────────────────────────────
+export const telegramBot = new TelegramBot();
+
+// ── Backward-compatible exports ───────────────────────────────────────────────
+export const processUpdate          = (update: any)              => telegramBot.processUpdate(update);
+export const notifyHostStatusUpdate = (params: NotifyStatusParams) => telegramBot.notifyHostStatusUpdate(params);
+export const setupWebhook           = (url: string)              => telegramBot.setupWebhook(url);
+export const deleteWebhook          = ()                         => telegramBot.deleteWebhook();
+export const startPolling           = ()                         => telegramBot.startPolling();

@@ -45,8 +45,8 @@ export class HostController {
 
     delete = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const result = await this.hostService.delete(Number(req.params.id));
-            res.status(200).json({ success: true, data: result });
+            await this.hostService.delete(Number(req.params.id));
+            res.status(200).json({ success: true, message: 'Host berhasil dihapus' });
         } catch (err) {
             next(err);
         }
