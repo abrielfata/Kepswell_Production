@@ -71,7 +71,7 @@ export class ReportRepository {
         return result.rows[0] || null;
     }
 
-    async create(data: {
+    async insertReportRecord(data: {
         host_id: number;
         platform: string;
         reported_gmv: number;
@@ -96,7 +96,7 @@ export class ReportRepository {
         return result.rows[0];
     }
 
-    async updateStatus(id: number, status: string, notes?: string): Promise<Report | null> {
+    async modifyReportStatus(id: number, status: string, notes?: string): Promise<Report | null> {
         const result = await query(
             `UPDATE reports SET status = $1, notes = $2, updated_at = CURRENT_TIMESTAMP
              WHERE id = $3 RETURNING *`,
@@ -105,7 +105,7 @@ export class ReportRepository {
         return result.rows[0] || null;
     }
 
-    async getStatistics(month?: number, year?: number): Promise<any> {
+    async queryStatisticsData(month?: number, year?: number): Promise<any> {
         const conditions: string[] = [];
         const params: any[] = [];
         let idx = 1;

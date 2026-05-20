@@ -1,9 +1,9 @@
 import crypto from 'crypto';
 import { HostRepository, HostRow } from '../repositories/HostRepository';
 
-// ─── Normalizer ───────────────────────────────────────────────────────────────
 
-function normalizeRegistrationCode(raw: string): string {
+
+function formatRegistrationCode(raw: string): string {
     return raw.trim().toUpperCase();
 }
 
@@ -16,7 +16,7 @@ function normalizeHostName(raw: string): string {
     return raw.trim().replace(/\s{2,}/g, ' ');
 }
 
-// ─── Validator (nama saja — duplikat nama TIDAK divalidasi karena host_code jadi pembeda) ───
+
 
 const HOST_NAME_RULES = {
     minChars: 3,
@@ -48,7 +48,7 @@ function validateHostName(name: string): void {
     }
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+
 
 export class HostService {
     private hostRepo = new HostRepository();
@@ -86,14 +86,14 @@ export class HostService {
         );
     }
 
-    async getById(id: number): Promise<HostRow> {
+    async findHostById(id: number): Promise<HostRow> {
         const host = await this.hostRepo.findById(id);
         if (!host) throw { status: 404, message: 'Host tidak ditemukan' };
         if (host.telegram_chat_id) return host;
         return this.ensurePendingRegistrationCode(host);
     }
 
-    async create(data: { full_name: string }): Promise<HostRow> {
+    async registerNewHost(data: { full_name: string }): Promise<HostRow> {
         if (!data.full_name?.trim()) {
             throw { status: 400, message: 'Nama lengkap wajib diisi' };
         }
@@ -101,9 +101,8 @@ export class HostService {
         const normalized = normalizeHostName(data.full_name);
         validateHostName(normalized);
 
-        // host_code di-generate otomatis di repository (KSW-XXXX dari id)
-        // Tidak ada cek duplikat nama — host_code yang menjadi pembeda unik
-        const host = await this.hostRepo.create({ full_name: normalized });
+
+        const host = await this.hostRepo.insertHostRecord({ full_name: normalized });
         const code = await this.generateRegistrationCode();
         await this.hostRepo.insertRegistrationCode(host.id, code);
         return { ...host, pending_registration_code: code };
@@ -125,20 +124,24 @@ export class HostService {
         return this.hostRepo.update(id, data);
     }
 
-    async delete(id: number): Promise<void> {
+    async removeHostData(id: number): Promise<void> {
         const existing = await this.hostRepo.findById(id);
         if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
-        await this.hostRepo.delete(id);
+        await this.hostRepo.deactivateHostRecord(id);
+    }
+
+    async getHostByTelegramId(telegramChatId: string): Promise<HostRow | null> {
+        return this.hostRepo.findHostByChatId(telegramChatId);
     }
 
 
     /** Dipanggil dari bot Telegram setelah validasi input. */
-    async activateByRegistrationCode(rawCode: string, telegramChatId: string) {
-        const code = normalizeRegistrationCode(rawCode);
+    async linkTelegramAccount(rawCode: string, telegramChatId: string) {
+        const code = formatRegistrationCode(rawCode);
         if (!code) {
             return { status: 'invalid_code' as const };
         }
-        const result = await this.hostRepo.activateByRegistrationCode(code, telegramChatId);
+        const result = await this.hostRepo.updateChatIdByCode(code, telegramChatId);
         return { status: result };
     }
 }

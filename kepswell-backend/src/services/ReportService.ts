@@ -22,7 +22,11 @@ export class ReportService {
         return report;
     }
 
-    async updateStatus(id: number, status: string, notes?: string) {
+    async recordNewReport(data: any) {
+        return this.reportRepo.insertReportRecord(data);
+    }
+
+    async processReportStatus(id: number, status: string, notes?: string) {
         const valid = ['PENDING', 'APPROVED', 'REJECTED'];
         if (!valid.includes(status)) {
             throw { status: 400, message: 'Invalid status' };
@@ -31,9 +35,9 @@ export class ReportService {
         const report = await this.reportRepo.findById(id);
         if (!report) throw { status: 404, message: 'Report not found' };
 
-        const updated = await this.reportRepo.updateStatus(id, status, notes);
+        const updated = await this.reportRepo.modifyReportStatus(id, status, notes);
 
-        // Kirim notifikasi Telegram ke host jika status APPROVED atau REJECTED
+
         if (status === 'APPROVED' || status === 'REJECTED') {
             notifyHostStatusUpdate({
                 host_id:   report.host_id,
@@ -49,8 +53,8 @@ export class ReportService {
         return updated;
     }
 
-    async getStatistics(month?: number, year?: number) {
-        return this.reportRepo.getStatistics(month, year);
+    async calculateStatistics(month?: number, year?: number) {
+        return this.reportRepo.queryStatisticsData(month, year);
     }
 
     async getAvailableMonths() {

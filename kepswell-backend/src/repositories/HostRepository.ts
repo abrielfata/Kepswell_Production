@@ -40,7 +40,7 @@ export class HostRepository {
         return mapHostRow(result.rows[0]);
     }
 
-    async findByTelegramChatId(telegramChatId: string): Promise<HostRow | null> {
+    async findHostByChatId(telegramChatId: string): Promise<HostRow | null> {
         const hash = hashChatId(telegramChatId);
         const result = await query(`${hostSelect} WHERE h.telegram_chat_id_hash = $1`, [hash]);
         return mapHostRow(result.rows[0]);
@@ -52,7 +52,7 @@ export class HostRepository {
      * 2. Langsung UPDATE host_code = 'KSW-' || LPAD(id, 4, '0')
      * Sehingga host_code selalu konsisten dengan id dan tidak bisa NULL.
      */
-    async create(data: { full_name: string }): Promise<Host> {
+    async insertHostRecord(data: { full_name: string }): Promise<Host> {
         return withTransaction(async (client) => {
             const insertRes = await client.query<Host>(
                 `INSERT INTO hosts (full_name) VALUES ($1) RETURNING *`,
@@ -99,8 +99,8 @@ export class HostRepository {
         return mapHostRow(result.rows[0]);
     }
 
-    async delete(id: number): Promise<boolean> {
-        const result = await query('DELETE FROM hosts WHERE id = $1', [id]);
+    async deactivateHostRecord(id: number): Promise<boolean> {
+        const result = await query('UPDATE hosts SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
         return (result.rowCount ?? 0) > 0;
     }
 
@@ -139,7 +139,7 @@ export class HostRepository {
     /**
      * Satu transaksi: kunci baris kode, cek Chat ID unik, pasang ke host, tandai kode terpakai.
      */
-    async activateByRegistrationCode(
+    async updateChatIdByCode(
         normalizedCode: string,
         telegramChatId: string,
     ): Promise<'ok' | 'invalid_code' | 'chat_already_host' | 'host_already_active' | 'concurrent'> {

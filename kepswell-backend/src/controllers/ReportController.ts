@@ -36,7 +36,7 @@ export class ReportController {
     updateStatus = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { status, notes } = req.body;
-            const report = await this.reportService.updateStatus(
+            const report = await this.reportService.processReportStatus(
                 Number(req.params.id), status, notes
             );
             res.status(200).json({ success: true, data: report });
@@ -48,7 +48,7 @@ export class ReportController {
     getStatistics = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { month, year } = req.query;
-            const stats = await this.reportService.getStatistics(
+            const stats = await this.reportService.calculateStatistics(
                 month ? Number(month) : undefined,
                 year  ? Number(year)  : undefined
             );
@@ -70,7 +70,7 @@ export class ReportController {
     getRanking = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { month, year } = req.query;
-            const ranking = await this.rankingService.getRanking(
+            const ranking = await this.rankingService.generateRanking(
                 month ? Number(month) : undefined,
                 year  ? Number(year)  : undefined
             );

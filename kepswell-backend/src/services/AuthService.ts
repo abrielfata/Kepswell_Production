@@ -16,7 +16,7 @@ export type LoginResult = {
 export class AuthService {
     private userRepo = new UserRepository();
 
-    async login(email: string, password: string): Promise<LoginResult> {
+    async authenticateUser(email: string, password: string): Promise<LoginResult> {
         if (!email || !password) {
             throw { status: 400, message: 'Email and password are required' };
         }
