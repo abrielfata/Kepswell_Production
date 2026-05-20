@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box, Card, CardContent, Typography, Select, MenuItem,
     FormControl, Chip, Table, TableBody, TableCell,
@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { reportsAPI } from '../api/reports';
 import type { RankedHost, AvailableMonth } from '../types';
 import { formatCurrency, formatDuration } from '../utils/format';
+import { webClient } from '../api/WebClient';
 
 const STAT_ITEMS = [
     { key: 'total_reports', label: 'Total Laporan' },
@@ -44,6 +45,20 @@ export default function DashboardPage() {
         name: h.host_name.split(' ')[0],
         GMV:  Math.round(Number(h.total_gmv) / 1_000),
     }));
+
+    useEffect(() => {
+        const month = selectedMonth ? Number(selectedMonth) : undefined;
+        const year  = selectedMonth ? new Date().getFullYear() : undefined;
+        webClient.loadDashboard(month, year);
+    }, [selectedMonth]);
+
+    useEffect(() => {
+        if (chartData.length > 0) webClient.renderChart(chartData);
+    }, [chartData]);
+
+    useEffect(() => {
+        if (ranking.length > 0) webClient.renderTable(ranking);
+    }, [ranking]);
 
     return (
         <Box>

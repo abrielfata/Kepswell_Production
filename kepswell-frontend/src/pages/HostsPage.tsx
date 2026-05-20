@@ -11,6 +11,7 @@ import { hostsAPI } from '../api/hosts';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Host } from '../types';
 import { formatDate } from '../utils/format';
+import { webClient } from '../api/WebClient';
 
 export default function HostsPage() {
     const [createOpen, setCreateOpen]   = useState(false);
@@ -22,21 +23,13 @@ export default function HostsPage() {
 
     // ── Validasi realtime (Lapis 1 — Frontend) ──────────────────────────────
     function validateName(value: string): string {
+        if (!webClient.validateHostForm(value)) return 'Nama tidak valid (min. 3 karakter, minimal 2 kata)';
         const normalized = value.trim().replace(/\s{2,}/g, ' ');
-
-        if (!normalized) return 'Nama lengkap wajib diisi';
-        if (normalized.length < 3) return 'Nama terlalu pendek (min. 3 karakter)';
         if (normalized.length > 100) return 'Nama terlalu panjang (maks. 100 karakter)';
-
-        const wordCount = normalized.split(' ').filter(w => w.length > 0).length;
-        if (wordCount < 2) return 'Nama harus terdiri dari minimal 2 kata';
-
         if (/\s{2,}/.test(value.trim())) return 'Nama tidak boleh mengandung spasi ganda';
-
         if (!/^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\s.']*$/.test(normalized)) {
             return 'Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof';
         }
-
         return '';
     }
 
