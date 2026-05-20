@@ -11,6 +11,7 @@ import { reportsAPI } from '../api/reports';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Report, AvailableMonth } from '../types';
 import { formatCurrency, formatDuration, formatDateTime } from '../utils/format';
+import { webClient } from '../api/WebClient';
 
 const STATUS_COLOR: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
     APPROVED: 'success',
@@ -194,7 +195,10 @@ export default function ReportsPage() {
                         Tolak
                     </Button>
                     <Button variant="contained" color="success" disabled={isPending}
-                        onClick={() => updateStatus({ id: selectedReport!.id, status: 'APPROVED' })}>
+                        onClick={() => {
+                            webClient.handleApprove(selectedReport!.id);
+                            updateStatus({ id: selectedReport!.id, status: 'APPROVED' });
+                        }}>
                         Setujui
                     </Button>
                 </DialogActions>

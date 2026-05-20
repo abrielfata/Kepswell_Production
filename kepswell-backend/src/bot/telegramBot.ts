@@ -8,15 +8,14 @@ import { ReportService } from '../services/ReportService';
 import { OCRService } from './ocrService';
 
 
-
 export interface NotifyStatusParams {
-    host_id:   number;
+    host_id: number;
     report_id: number;
-    status:    'APPROVED' | 'REJECTED';
-    gmv:       number;
-    duration:  number;
-    platform:  string;
-    notes?:    string;
+    status: 'APPROVED' | 'REJECTED';
+    gmv: number;
+    duration: number;
+    platform: string;
+    notes?: string;
 }
 
 
@@ -24,12 +23,12 @@ export interface NotifyStatusParams {
 export class TelegramBot {
     private readonly BASE_URL = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
 
-    private readonly hostService   = new HostService();
+    private readonly hostService = new HostService();
     private readonly reportService = new ReportService();
-    private readonly ocrService  = new OCRService();
+    private readonly ocrService = new OCRService();
 
     private readonly pendingReports = new Map<string, any>();
-    private readonly attempts       = new Map<string, { count: number; resetAt: number }>();
+    private readonly attempts = new Map<string, { count: number; resetAt: number }>();
 
     private pollingOffset = 0;
     private pollingActive = false;
@@ -37,7 +36,7 @@ export class TelegramBot {
 
 
     private isRateLimited(chatId: string): boolean {
-        const now   = Date.now();
+        const now = Date.now();
         const entry = this.attempts.get(chatId);
         if (!entry || now > entry.resetAt) {
             this.attempts.set(chatId, { count: 1, resetAt: now + 3_600_000 });
@@ -50,7 +49,7 @@ export class TelegramBot {
 
     private async sendMessage(chatId: number | string, text: string): Promise<void> {
         await axios.post(`${this.BASE_URL}/sendMessage`, {
-            chat_id:    chatId,
+            chat_id: chatId,
             text,
             parse_mode: 'Markdown',
         }).catch(err => console.error('Send message error:', err.message));
@@ -61,10 +60,10 @@ export class TelegramBot {
      * Melempar Error jika unduhan gagal (fail-fast — tidak return null).
      */
     private async downloadPhoto(fileId: string): Promise<string> {
-        const fileRes  = await axios.get(`${this.BASE_URL}/getFile?file_id=${fileId}`);
+        const fileRes = await axios.get(`${this.BASE_URL}/getFile?file_id=${fileId}`);
         const filePath = fileRes.data.result.file_path;
-        const fileUrl  = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${filePath}`;
-        const imgRes   = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const fileUrl = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${filePath}`;
+        const imgRes = await axios.get(fileUrl, { responseType: 'arraybuffer' });
 
         const uploadsDir = path.join(__dirname, '../uploads');
         if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -114,9 +113,9 @@ export class TelegramBot {
         const message = update.message;
         if (!message) return;
 
-        const chatId         = message.chat.id;
+        const chatId = message.chat.id;
         const telegramChatId = String(message.chat.id);
-        const text           = message.text?.trim();
+        const text = message.text?.trim();
 
 
         if (text === '/start') {
@@ -138,7 +137,7 @@ export class TelegramBot {
 
 
         if (text && /^\/daftar\b/i.test(text)) {
-            const match   = text.match(/^\/daftar\s+(.+)$/i);
+            const match = text.match(/^\/daftar\s+(.+)$/i);
             const rawCode = match ? match[1].trim() : '';
             if (!rawCode) {
                 await this.sendMessage(chatId,
@@ -180,20 +179,20 @@ export class TelegramBot {
 
 
         if (this.pendingReports.has(telegramChatId)) {
-            const pending  = this.pendingReports.get(telegramChatId);
+            const pending = this.pendingReports.get(telegramChatId);
             const response = text?.toUpperCase();
 
             if (response === 'Y' || response === 'YA') {
                 const now = new Date();
                 await this.reportService.recordNewReport({
-                    host_id:               pending.host_id,
-                    platform:              pending.platform,
-                    reported_gmv:          pending.gmv,
+                    host_id: pending.host_id,
+                    platform: pending.platform,
+                    reported_gmv: pending.gmv,
                     live_duration_minutes: pending.duration,
-                    screenshot_url:        pending.screenshotUrl,
-                    ocr_raw_text:          pending.rawText,
-                    month:                 now.getMonth() + 1,
-                    year:                  now.getFullYear(),
+                    screenshot_url: pending.screenshotUrl,
+                    ocr_raw_text: pending.rawText,
+                    month: now.getMonth() + 1,
+                    year: now.getFullYear(),
                 });
 
                 this.pendingReports.delete(telegramChatId);
@@ -247,8 +246,8 @@ export class TelegramBot {
             }
 
             const uploadsDir = path.join(__dirname, '../uploads');
-            const localPath  = path.join(uploadsDir, filename);
-            const ocr        = await this.ocrService.extractFromImage(localPath);
+            const localPath = path.join(uploadsDir, filename);
+            const ocr = await this.ocrService.extractFromImage(localPath);
 
             if (!ocr.success) {
                 await this.sendMessage(chatId, `❌ Gagal membaca teks.\n${ocr.error}`);
@@ -266,11 +265,11 @@ export class TelegramBot {
             const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
 
             this.pendingReports.set(telegramChatId, {
-                host_id:      host.id,
-                platform:     ocr.platform,
-                gmv:          ocr.parsedGMV,
-                duration:     ocr.parsedDurationMinutes,
-                rawText:      ocr.rawText,
+                host_id: host.id,
+                platform: ocr.platform,
+                gmv: ocr.parsedGMV,
+                duration: ocr.parsedDurationMinutes,
+                rawText: ocr.rawText,
                 screenshotUrl,
             });
 
@@ -291,7 +290,7 @@ export class TelegramBot {
 
     async setupWebhook(webhookUrl: string): Promise<void> {
         const res = await axios.post(`${this.BASE_URL}/setWebhook`, {
-            url:             webhookUrl,
+            url: webhookUrl,
             allowed_updates: ['message'],
         });
         console.log('🤖 Webhook set:', res.data.ok);
@@ -314,8 +313,8 @@ export class TelegramBot {
             try {
                 const res = await axios.get(`${this.BASE_URL}/getUpdates`, {
                     params: {
-                        offset:          this.pollingOffset,
-                        timeout:         10,
+                        offset: this.pollingOffset,
+                        timeout: 10,
                         allowed_updates: ['message'],
                     },
                     timeout: 15000,
@@ -342,8 +341,8 @@ export class TelegramBot {
 export const telegramBot = new TelegramBot();
 
 
-export const processUpdate          = (update: any)              => telegramBot.processUpdate(update);
+export const processUpdate = (update: any) => telegramBot.processUpdate(update);
 export const notifyHostStatusUpdate = (params: NotifyStatusParams) => telegramBot.notifyHostStatusUpdate(params);
-export const setupWebhook           = (url: string)              => telegramBot.setupWebhook(url);
-export const deleteWebhook          = ()                         => telegramBot.deleteWebhook();
-export const startPolling           = ()                         => telegramBot.startPolling();
+export const setupWebhook = (url: string) => telegramBot.setupWebhook(url);
+export const deleteWebhook = () => telegramBot.deleteWebhook();
+export const startPolling = () => telegramBot.startPolling();
