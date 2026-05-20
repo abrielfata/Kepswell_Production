@@ -20,7 +20,7 @@ export class RankingService {
         gmv_per_hour: 0.20,
     };
 
-    async getRanking(month?: number, year?: number): Promise<RankedHost[]> {
+    async generateRanking(month?: number, year?: number): Promise<RankedHost[]> {
         const hosts = await this.reportRepo.getHostPerformance(month, year);
         if (hosts.length === 0) return [];
 

@@ -3,12 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { ENV } from '../config/env';
-import { HostRepository } from '../repositories/HostRepository';
-import { ReportRepository } from '../repositories/ReportRepository';
 import { HostService } from '../services/HostService';
+import { ReportService } from '../services/ReportService';
 import { OCRService } from './ocrService';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+
 
 export interface NotifyStatusParams {
     host_id:   number;
@@ -20,14 +19,13 @@ export interface NotifyStatusParams {
     notes?:    string;
 }
 
-// ── TelegramBot Class ─────────────────────────────────────────────────────────
+
 
 export class TelegramBot {
     private readonly BASE_URL = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
 
-    private readonly hostRepo    = new HostRepository();
-    private readonly hostService = new HostService();
-    private readonly reportRepo  = new ReportRepository();
+    private readonly hostService   = new HostService();
+    private readonly reportService = new ReportService();
     private readonly ocrService  = new OCRService();
 
     private readonly pendingReports = new Map<string, any>();
@@ -36,7 +34,7 @@ export class TelegramBot {
     private pollingOffset = 0;
     private pollingActive = false;
 
-    // ── Private helpers ────────────────────────────────────────────────────────
+
 
     private isRateLimited(chatId: string): boolean {
         const now   = Date.now();
@@ -77,10 +75,10 @@ export class TelegramBot {
         return filename;
     }
 
-    // ── Public methods ─────────────────────────────────────────────────────────
+
 
     async notifyHostStatusUpdate(params: NotifyStatusParams): Promise<void> {
-        const host = await this.hostRepo.findById(params.host_id);
+        const host = await this.hostService.findHostById(params.host_id);
         if (!host?.telegram_chat_id) return;
 
         const gmvFormatted = new Intl.NumberFormat('id-ID', {
@@ -120,9 +118,9 @@ export class TelegramBot {
         const telegramChatId = String(message.chat.id);
         const text           = message.text?.trim();
 
-        // /start
+
         if (text === '/start') {
-            const host = await this.hostRepo.findByTelegramChatId(telegramChatId);
+            const host = await this.hostService.getHostByTelegramId(telegramChatId);
             if (!host) {
                 await this.sendMessage(chatId,
                     '👋 Selamat datang!\n\nAnda belum terhubung sebagai host.\n' +
@@ -138,7 +136,7 @@ export class TelegramBot {
             return;
         }
 
-        // /daftar KODE
+
         if (text && /^\/daftar\b/i.test(text)) {
             const match   = text.match(/^\/daftar\s+(.+)$/i);
             const rawCode = match ? match[1].trim() : '';
@@ -154,10 +152,10 @@ export class TelegramBot {
                 return;
             }
 
-            const { status } = await this.hostService.activateByRegistrationCode(rawCode, telegramChatId);
+            const { status } = await this.hostService.linkTelegramAccount(rawCode, telegramChatId);
 
             if (status === 'ok') {
-                const host = await this.hostRepo.findByTelegramChatId(telegramChatId);
+                const host = await this.hostService.getHostByTelegramId(telegramChatId);
                 await this.sendMessage(chatId,
                     `✅ Berhasil! Akun *${host?.full_name ?? 'host'}* telah terhubung.\n\n` +
                     `Kirimkan screenshot GMV untuk mulai laporan.`
@@ -180,14 +178,14 @@ export class TelegramBot {
             return;
         }
 
-        // Konfirmasi Y/N
+
         if (this.pendingReports.has(telegramChatId)) {
             const pending  = this.pendingReports.get(telegramChatId);
             const response = text?.toUpperCase();
 
             if (response === 'Y' || response === 'YA') {
                 const now = new Date();
-                await this.reportRepo.create({
+                await this.reportService.recordNewReport({
                     host_id:               pending.host_id,
                     platform:              pending.platform,
                     reported_gmv:          pending.gmv,
@@ -220,9 +218,9 @@ export class TelegramBot {
             return;
         }
 
-        // Photo
+
         if (message.photo) {
-            const host = await this.hostRepo.findByTelegramChatId(telegramChatId);
+            const host = await this.hostService.getHostByTelegramId(telegramChatId);
 
             if (!host) {
                 await this.sendMessage(chatId,
@@ -289,7 +287,7 @@ export class TelegramBot {
         await this.sendMessage(chatId, 'Kirim *screenshot GMV*, `/daftar KODE`, atau ketik /start');
     }
 
-    // ── Webhook & Polling ──────────────────────────────────────────────────────
+
 
     async setupWebhook(webhookUrl: string): Promise<void> {
         const res = await axios.post(`${this.BASE_URL}/setWebhook`, {
@@ -340,10 +338,10 @@ export class TelegramBot {
     }
 }
 
-// ── Singleton ─────────────────────────────────────────────────────────────────
+
 export const telegramBot = new TelegramBot();
 
-// ── Backward-compatible exports ───────────────────────────────────────────────
+
 export const processUpdate          = (update: any)              => telegramBot.processUpdate(update);
 export const notifyHostStatusUpdate = (params: NotifyStatusParams) => telegramBot.notifyHostStatusUpdate(params);
 export const setupWebhook           = (url: string)              => telegramBot.setupWebhook(url);

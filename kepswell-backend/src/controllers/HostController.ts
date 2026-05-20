@@ -18,7 +18,7 @@ export class HostController {
 
     getById = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const host = await this.hostService.getById(Number(req.params.id));
+            const host = await this.hostService.findHostById(Number(req.params.id));
             res.status(200).json({ success: true, data: host });
         } catch (err) {
             next(err);
@@ -27,7 +27,7 @@ export class HostController {
 
     create = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const host = await this.hostService.create(req.body);
+            const host = await this.hostService.registerNewHost(req.body);
             res.status(201).json({ success: true, data: host });
         } catch (err) {
             next(err);
@@ -45,7 +45,7 @@ export class HostController {
 
     delete = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            await this.hostService.delete(Number(req.params.id));
+            await this.hostService.removeHostData(Number(req.params.id));
             res.status(200).json({ success: true, message: 'Host berhasil dihapus' });
         } catch (err) {
             next(err);
