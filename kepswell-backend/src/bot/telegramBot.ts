@@ -23,9 +23,24 @@ export interface NotifyStatusParams {
 export class TelegramBot {
     private readonly BASE_URL = `https://api.telegram.org/bot${ENV.TELEGRAM_BOT_TOKEN}`;
 
-    private readonly hostService = new HostService();
-    private readonly reportService = new ReportService();
-    private readonly ocrService = new OCRService();
+    private _hostService?: HostService;
+    private _reportService?: ReportService;
+    private _ocrService?: OCRService;
+
+    private get hostService() {
+        if (!this._hostService) this._hostService = new HostService();
+        return this._hostService;
+    }
+
+    private get reportService() {
+        if (!this._reportService) this._reportService = new ReportService();
+        return this._reportService;
+    }
+
+    private get ocrService() {
+        if (!this._ocrService) this._ocrService = new OCRService();
+        return this._ocrService;
+    }
 
     private readonly pendingReports = new Map<string, any>();
     private readonly attempts = new Map<string, { count: number; resetAt: number }>();
