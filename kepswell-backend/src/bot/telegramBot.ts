@@ -13,6 +13,7 @@ export interface NotifyStatusParams {
     report_id: number;
     status: 'APPROVED' | 'REJECTED';
     gmv: number;
+    pesanan_sku: number;
     duration: number;
     platform: string;
     notes?: string;
@@ -105,8 +106,8 @@ export class TelegramBot {
             await this.sendMessage(
                 host.telegram_chat_id,
                 `✅ *Laporan #${params.report_id} Disetujui!*\n\n` +
-                `Platform : ${params.platform}\n` +
                 `GMV      : ${gmvFormatted}\n` +
+                `Pesanan  : ${params.pesanan_sku} SKU\n` +
                 `Durasi   : ${durasiText}\n` +
                 (params.notes ? `\nCatatan  : ${params.notes}` : '') +
                 `\n\nTerima kasih! Data Anda telah dicatat. 🎉`
@@ -115,8 +116,8 @@ export class TelegramBot {
             await this.sendMessage(
                 host.telegram_chat_id,
                 `❌ *Laporan #${params.report_id} Ditolak*\n\n` +
-                `Platform : ${params.platform}\n` +
                 `GMV      : ${gmvFormatted}\n` +
+                `Pesanan  : ${params.pesanan_sku} SKU\n` +
                 `Durasi   : ${durasiText}\n` +
                 (params.notes ? `\nAlasan   : ${params.notes}` : '') +
                 `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`
@@ -203,6 +204,7 @@ export class TelegramBot {
                     host_id: pending.host_id,
                     platform: pending.platform,
                     reported_gmv: pending.gmv,
+                    reported_pesanan_sku: pending.pesanan_sku,
                     live_duration_minutes: pending.duration,
                     screenshot_url: pending.screenshotUrl,
                     ocr_raw_text: pending.rawText,
@@ -218,8 +220,8 @@ export class TelegramBot {
 
                 await this.sendMessage(chatId,
                     `✅ *Laporan Tersimpan!*\n\n` +
-                    `Platform : ${pending.platform}\n` +
                     `GMV      : ${gmvFormatted}\n` +
+                    `Pesanan  : ${pending.pesanan_sku} SKU\n` +
                     `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n\n` +
                     `Status: *PENDING* — menunggu verifikasi manager.`
                 );
@@ -283,6 +285,7 @@ export class TelegramBot {
                 host_id: host.id,
                 platform: ocr.platform,
                 gmv: ocr.parsedGMV,
+                pesanan_sku: ocr.parsedPesananSKU,
                 duration: ocr.parsedDurationMinutes,
                 rawText: ocr.rawText,
                 screenshotUrl,
@@ -290,8 +293,8 @@ export class TelegramBot {
 
             await this.sendMessage(chatId,
                 `✅ *Screenshot Diproses!*\n\n` +
-                `Platform : ${ocr.platform}\n` +
                 `GMV      : ${gmvFormatted}\n` +
+                `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
                 `Durasi   : ${durasiText}\n\n` +
                 `Ketik *Y* untuk simpan atau *N* untuk batal.`
             );

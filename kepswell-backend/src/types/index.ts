@@ -27,6 +27,7 @@ export interface Report {
     host_id: number;
     platform: 'TIKTOK' | 'SHOPEE';
     reported_gmv: number;
+    reported_pesanan_sku: number;
     live_duration_minutes: number;
     screenshot_url: string | null;
     ocr_raw_text: string | null;

@@ -8,6 +8,7 @@ export interface OcrResult {
     rawText: string;
     parsedGMV: number;
     parsedDurationMinutes: number;
+    parsedPesananSKU: number;
     platform: 'TIKTOK';
     error?: string;
 }
@@ -58,6 +59,24 @@ export class OCRService {
         return 0;
     }
 
+    private parsePesananSKU(text: string): number {
+        const clean = text.toUpperCase().replace(/\s+/g, ' ');
+        const patterns = [
+            /PESANAN\s*SKU[^0-9]*(\d+)/i,
+            /(\d+)\s*PESANAN\s*SKU/i,
+            /RP[\d.,K]+\s+(\d+)\s+/i,
+            /SKU[^0-9]*(\d+)/i
+        ];
+
+        for (const pattern of patterns) {
+            const match = clean.match(pattern);
+            if (match) {
+                return parseInt(match[1], 10);
+            }
+        }
+        return 0;
+    }
+
     private detectPlatform(text: string): 'TIKTOK' {
         // Fokus hanya pada TikTok Shop (sesuai spesifikasi main branch)
         return 'TIKTOK';
@@ -90,6 +109,7 @@ export class OCRService {
                 rawText,
                 parsedGMV:             this.parseGMV(rawText),
                 parsedDurationMinutes: this.parseDurationMinutes(rawText),
+                parsedPesananSKU:      this.parsePesananSKU(rawText),
                 platform:              this.detectPlatform(rawText),
             };
         } catch (err: any) {
@@ -98,6 +118,7 @@ export class OCRService {
                 rawText:               '',
                 parsedGMV:             0,
                 parsedDurationMinutes: 0,
+                parsedPesananSKU:      0,
                 platform:              'TIKTOK',
                 error:                 err.message,
             };
