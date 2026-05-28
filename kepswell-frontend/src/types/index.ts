@@ -23,6 +23,7 @@ export interface Report {
     host_name: string;
     platform: 'TIKTOK' | 'SHOPEE';
     reported_gmv: number;
+    reported_pesanan_sku: number;
     live_duration_minutes: number;
     screenshot_url: string | null;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
