@@ -75,6 +75,7 @@ export class ReportRepository {
         host_id: number;
         platform: string;
         reported_gmv: number;
+        reported_pesanan_sku: number;
         live_duration_minutes: number;
         screenshot_url?: string;
         ocr_raw_text?: string;
@@ -83,12 +84,12 @@ export class ReportRepository {
     }): Promise<Report> {
         const result = await query(
             `INSERT INTO reports (
-                host_id, platform, reported_gmv, live_duration_minutes,
+                host_id, platform, reported_gmv, reported_pesanan_sku, live_duration_minutes,
                 screenshot_url, ocr_raw_text, month, year
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
              RETURNING *`,
             [
-                data.host_id, data.platform, data.reported_gmv,
+                data.host_id, data.platform, data.reported_gmv, data.reported_pesanan_sku,
                 data.live_duration_minutes, data.screenshot_url || null,
                 data.ocr_raw_text || null, data.month, data.year
             ]

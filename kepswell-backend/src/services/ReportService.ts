@@ -44,6 +44,7 @@ export class ReportService {
                 report_id: report.id,
                 status:    status as 'APPROVED' | 'REJECTED',
                 gmv:       Number(report.reported_gmv),
+                pesanan_sku: Number(report.reported_pesanan_sku),
                 duration:  Number(report.live_duration_minutes),
                 platform:  report.platform,
                 notes,
