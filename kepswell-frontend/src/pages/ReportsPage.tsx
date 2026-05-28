@@ -113,8 +113,8 @@ export default function ReportsPage() {
                                 <TableRow>
                                     <TableCell>ID</TableCell>
                                     <TableCell>Host</TableCell>
-                                    <TableCell>Platform</TableCell>
                                     <TableCell align="right">GMV</TableCell>
+                                    <TableCell align="right">Pesanan</TableCell>
                                     <TableCell align="right">Durasi</TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Tanggal</TableCell>
@@ -126,14 +126,8 @@ export default function ReportsPage() {
                                     <TableRow key={r.id}>
                                         <TableCell sx={{ color: '#9ca3af' }}>#{r.id}</TableCell>
                                         <TableCell sx={{ fontWeight: 500 }}>{r.host_name}</TableCell>
-                                        <TableCell>
-                                            <Chip label={r.platform} size="small"
-                                                sx={{
-                                                    bgcolor: r.platform === 'TIKTOK' ? '#f0fdf4' : '#fff7ed',
-                                                    color: r.platform === 'TIKTOK' ? '#16a34a' : '#ea580c'
-                                                }} />
-                                        </TableCell>
                                         <TableCell align="right">{formatCurrency(r.reported_gmv)}</TableCell>
+                                        <TableCell align="right">{r.reported_pesanan_sku || 0} SKU</TableCell>
                                         <TableCell align="right" sx={{ color: '#6b7280' }}>{formatDuration(r.live_duration_minutes)}</TableCell>
                                         <TableCell>
                                             <Chip label={STATUS_LABEL[r.status] ?? r.status} size="small"
@@ -177,8 +171,8 @@ export default function ReportsPage() {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {[
                             { label: 'Host', value: selectedReport?.host_name },
-                            { label: 'Platform', value: selectedReport?.platform },
                             { label: 'GMV', value: formatCurrency(selectedReport?.reported_gmv || 0) },
+                            { label: 'Pesanan', value: `${selectedReport?.reported_pesanan_sku || 0} SKU` },
                             { label: 'Durasi', value: formatDuration(selectedReport?.live_duration_minutes || 0) },
                         ].map(row => (
                             <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
