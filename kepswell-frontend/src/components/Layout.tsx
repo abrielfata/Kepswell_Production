@@ -33,7 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* Brand */}
             <Box sx={{ px: 2.5, pt: 2.5, pb: 2 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#1a1d23', letterSpacing: '-0.2px' }}>
-                    Kepswell
+                    Kepstore
                 </Typography>
                 <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af', mt: 0.25 }}>
                     Live Session Reporting
@@ -116,7 +116,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <IconButton onClick={() => setMobileOpen(!mobileOpen)} size="small" edge="start">
                         <MenuIcon sx={{ fontSize: 20 }} />
                     </IconButton>
-                    <Typography sx={{ ml: 1.5, fontWeight: 700, fontSize: '0.9rem' }}>Kepswell</Typography>
+                    <Typography sx={{ ml: 1.5, fontWeight: 700, fontSize: '0.9rem' }}>Kepstore</Typography>
                 </Toolbar>
             </AppBar>
 
@@ -146,7 +146,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Page top border accent */}
                 <Box sx={{ mb: 3, pb: 2.5, borderBottom: '1px solid #e5e7eb' }}>
                     <Typography sx={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                        {navItems.find(n => isActive(n.path))?.label ?? 'Kepswell'}
+                        {navItems.find(n => isActive(n.path))?.label ?? 'Kepstore'}
                     </Typography>
                 </Box>
                 {children}

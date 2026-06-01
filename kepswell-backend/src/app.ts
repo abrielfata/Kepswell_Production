@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-const VERCEL_PATTERN = /^https:\/\/kepswell.*\.vercel\.app$/;
+const VERCEL_PATTERN = /^https:\/\/kepstore.*\.vercel\.app$/;
 
 const isAllowedOrigin = (origin: string): boolean => {
     if (!origin) return false;
@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (_, res) => {
-    res.json({ success: true, message: 'Kepswell API', version: '2.0.0' });
+    res.json({ success: true, message: 'Kepstore API', version: '2.0.0' });
 });
 
 app.use('/api/auth',    authRoutes);
