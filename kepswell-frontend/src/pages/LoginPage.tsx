@@ -63,7 +63,7 @@ export default function LoginPage() {
                         <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>K</Typography>
                     </Box>
                     <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#1a1d23' }}>
-                        Masuk ke Kepswell
+                        Masuk ke Kepstore
                     </Typography>
                     <Typography sx={{ fontSize: '0.82rem', color: '#6b7280', mt: 0.5 }}>
                         Live Session Reporting System
@@ -85,7 +85,7 @@ export default function LoginPage() {
                                 Email
                             </Typography>
                             <TextField
-                                type="email" placeholder="manager@kepswell.com"
+                                type="email" placeholder="manager@kepstore.com"
                                 value={email} onChange={e => setEmail(e.target.value)}
                                 required fullWidth
                             />
@@ -117,7 +117,7 @@ export default function LoginPage() {
                 </Box>
 
                 <Typography sx={{ textAlign: 'center', mt: 3, fontSize: '0.72rem', color: '#9ca3af' }}>
-                    Kepswell &copy; {new Date().getFullYear()} &mdash; Hanya untuk Manager
+                    Kepstore &copy; {new Date().getFullYear()} &mdash; Hanya untuk Manager
                 </Typography>
             </Box>
         </Box>
