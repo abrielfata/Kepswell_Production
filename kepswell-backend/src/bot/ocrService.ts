@@ -60,20 +60,27 @@ export class OCRService {
     }
 
     private parsePesananSKU(text: string): number {
-        const clean = text.toUpperCase().replace(/\s+/g, ' ');
-        const patterns = [
-            /PESANAN\s*SKU[^0-9]*(\d+)/i,
-            /(\d+)\s*PESANAN\s*SKU/i,
-            /RP[\d.,K]+\s+(\d+)\s+/i,
-            /SKU[^0-9]*(\d+)/i
-        ];
+        const clean = text.replace(/\s+/g, ' ');
 
-        for (const pattern of patterns) {
-            const match = clean.match(pattern);
-            if (match) {
-                return parseInt(match[1], 10);
-            }
-        }
+        // Prioritas 1: Angka yang langsung SEBELUM label "Pesanan SKU"
+        // Contoh: "Rp77,8K 1\nGMV Langsung Pesanan SKU"
+        // OCR sering membaca sebagai: "Rp77,8K 1 GMV Langsung Pesanan SKU"
+        const beforeLabel = clean.match(/(\d+)\s*(?:Pesanan\s*SKU)/i);
+        if (beforeLabel) return parseInt(beforeLabel[1], 10);
+
+        // Prioritas 2: Angka yang langsung SETELAH label "Pesanan SKU"
+        const afterLabel = clean.match(/Pesanan\s*SKU\s*[^0-9]*(\d+)/i);
+        if (afterLabel) return parseInt(afterLabel[1], 10);
+
+        // Prioritas 3: Pola "SKU" dengan angka di sekitarnya
+        const skuMatch = clean.match(/(\d+)\s*SKU/i);
+        if (skuMatch) return parseInt(skuMatch[1], 10);
+
+        // Prioritas 4: Angka setelah GMV (hanya jika kecil, bukan Komentar/Tayangan)
+        // Kita cari pola Rp...K SPASI angka kecil (< 1000) = Pesanan SKU
+        const afterGmv = clean.match(/Rp[\d.,]+K?\s+(\d{1,4})\b(?!\s*(?:K|Juta|Impresi|Tayangan|Komentar))/i);
+        if (afterGmv) return parseInt(afterGmv[1], 10);
+
         return 0;
     }
 
