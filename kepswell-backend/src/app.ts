@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-const VERCEL_PATTERN = /^https:\/\/kepstore.*\.vercel\.app$/;
+const VERCEL_PATTERN = /^https:\/\/(kepstore|kepswell).*\.vercel\.app$/;
 
 const isAllowedOrigin = (origin: string): boolean => {
     if (!origin) return false;
