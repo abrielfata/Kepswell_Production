@@ -1,5 +1,7 @@
 import { ReportRepository } from '../repositories/ReportRepository';
 import { notifyHostStatusUpdate } from '../bot/telegramBot';
+import { AppError } from '../utils/AppError';
+import { REPORT_STATUS } from '../config/constants';
 
 export class ReportService {
     private reportRepo = new ReportRepository();
@@ -18,7 +20,7 @@ export class ReportService {
 
     async getById(id: number) {
         const report = await this.reportRepo.findById(id);
-        if (!report) throw { status: 404, message: 'Report not found' };
+        if (!report) throw new AppError('Report not found', 404);
         return report;
     }
 
@@ -27,18 +29,18 @@ export class ReportService {
     }
 
     async processReportStatus(id: number, status: string, notes?: string) {
-        const valid = ['PENDING', 'APPROVED', 'REJECTED'];
+        const valid = Object.values(REPORT_STATUS) as string[];
         if (!valid.includes(status)) {
-            throw { status: 400, message: 'Invalid status' };
+            throw new AppError('Invalid status', 400);
         }
 
         const report = await this.reportRepo.findById(id);
-        if (!report) throw { status: 404, message: 'Report not found' };
+        if (!report) throw new AppError('Report not found', 404);
 
         const updated = await this.reportRepo.modifyReportStatus(id, status, notes);
 
 
-        if (status === 'APPROVED' || status === 'REJECTED') {
+        if (status === REPORT_STATUS.APPROVED || status === REPORT_STATUS.REJECTED) {
             notifyHostStatusUpdate({
                 host_id:   report.host_id,
                 report_id: report.id,

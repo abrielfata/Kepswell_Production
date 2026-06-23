@@ -6,12 +6,10 @@ import {
     DialogActions, TextField, IconButton, Tooltip, Alert
 } from '@mui/material';
 import { ContentCopy, Check } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { hostsAPI } from '../api/hosts';
-import { useNotification } from '../contexts/NotificationContext';
 import type { Host } from '../types';
 import { formatDate } from '../utils/format';
-import { webClient } from '../api/WebClient';
+import { useHosts } from '../hooks/useHosts';
+import { hostSchema } from '../utils/validations';
 
 export default function HostsPage() {
     const [createOpen, setCreateOpen]   = useState(false);
@@ -21,61 +19,15 @@ export default function HostsPage() {
     const [nameError, setNameError]     = useState('');
     const [copiedId, setCopiedId]       = useState<number | null>(null);
 
-    // ── Validasi realtime (Lapis 1 — Frontend) ──────────────────────────────
+    const { hosts, createHost, creating, deleteHost } = useHosts();
+
     function validateName(value: string): string {
-        if (!webClient.validateHostForm(value)) return 'Nama tidak valid (min. 3 karakter, minimal 2 kata)';
-        const normalized = value.trim().replace(/\s{2,}/g, ' ');
-        if (normalized.length > 100) return 'Nama terlalu panjang (maks. 100 karakter)';
-        if (/\s{2,}/.test(value.trim())) return 'Nama tidak boleh mengandung spasi ganda';
-        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\s.']*$/.test(normalized)) {
-            return 'Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof';
+        const result = hostSchema.safeParse({ full_name: value });
+        if (!result.success) {
+            return result.error.issues[0].message;
         }
         return '';
     }
-
-    const queryClient = useQueryClient();
-    const { showNotification } = useNotification();
-
-    const { data: hosts = [] } = useQuery({
-        queryKey: ['hosts'],
-        queryFn:  () => hostsAPI.getAll().then(r => r.data.data as Host[]),
-    });
-
-    const { mutate: createHost, isPending: creating } = useMutation({
-        mutationFn: () => hostsAPI.create({ full_name: fullName }),
-        onSuccess: (res) => {
-            const created = res.data.data as Host;
-            queryClient.invalidateQueries({ queryKey: ['hosts'] });
-            setCreateOpen(false);
-            setFullName('');
-            setNameError('');
-            showNotification(
-                `Host ${created.full_name} berhasil ditambahkan dengan kode ${created.host_code}`,
-                'success'
-            );
-        },
-        onError: (err: any) => {
-            const msg: string = err?.response?.data?.message ?? '';
-            if (err?.response?.status === 409) {
-                setNameError(msg || 'Nama host sudah terdaftar');
-            } else if (err?.response?.status === 400) {
-                setNameError(msg || 'Nama tidak valid');
-            } else {
-                showNotification('Gagal menambahkan host', 'error');
-            }
-        },
-    });
-
-
-
-    const { mutate: deleteHost } = useMutation({
-        mutationFn: (id: number) => hostsAPI.delete(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['hosts'] });
-            showNotification('Host berhasil dihapus', 'success');
-        },
-        onError: () => showNotification('Gagal menghapus host', 'error'),
-    });
 
     const copyRegisterCommand = (host: Host) => {
         const code = host.pending_registration_code;
@@ -101,6 +53,15 @@ export default function HostsPage() {
             deleteHost(hostToDelete.id);
             setDeleteOpen(false);
             setHostToDelete(null);
+        }
+    };
+
+    const handleCreate = async () => {
+        try {
+            await createHost(fullName);
+            handleClose();
+        } catch (error: any) {
+            setNameError(error.message);
         }
     };
 
@@ -223,7 +184,7 @@ export default function HostsPage() {
                             error={!!nameError}
                             helperText={nameError || ' '}
                             onKeyDown={e => {
-                                if (e.key === 'Enter' && fullName.trim() && !validateName(fullName)) createHost();
+                                if (e.key === 'Enter' && fullName.trim() && !validateName(fullName)) handleCreate();
                             }}
                         />
                     </Box>
@@ -234,7 +195,7 @@ export default function HostsPage() {
                     </Button>
                     <Button variant="contained"
                         disabled={!fullName.trim() || !!validateName(fullName) || creating}
-                        onClick={() => createHost()}>
+                        onClick={handleCreate}>
                         Buat Host
                     </Button>
                 </DialogActions>

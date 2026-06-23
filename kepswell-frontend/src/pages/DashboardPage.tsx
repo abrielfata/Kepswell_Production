@@ -4,12 +4,9 @@ import {
     FormControl, Chip, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Paper, Skeleton
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { reportsAPI } from '../api/reports';
-import type { RankedHost, AvailableMonth } from '../types';
+import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
-import { webClient } from '../api/WebClient';
 
 const STAT_ITEMS = [
     { key: 'total_reports', label: 'Total Laporan' },
@@ -26,38 +23,14 @@ export default function DashboardPage() {
         ? { month: Number(selectedMonth), year: new Date().getFullYear() }
         : {};
 
-    const { data: monthsData } = useQuery({
-        queryKey: ['available-months'],
-        queryFn:  () => reportsAPI.getAvailableMonths().then(r => r.data.data as AvailableMonth[]),
-    });
-
-    const { data: stats, isLoading: statsLoading } = useQuery({
-        queryKey: ['statistics', monthParams],
-        queryFn:  () => reportsAPI.getStatistics(monthParams).then(r => r.data.data),
-    });
-
-    const { data: ranking = [], isLoading: rankLoading } = useQuery({
-        queryKey: ['ranking', monthParams],
-        queryFn:  () => reportsAPI.getRanking(monthParams).then(r => r.data.data as RankedHost[]),
-    });
-
-    const chartData = ranking.slice(0, 10).map(h => ({
-        name: h.host_name.split(' ')[0],
-        GMV:  Math.round(Number(h.total_gmv) / 1_000),
-    }));
+    const { monthsData, stats, statsLoading, ranking, rankLoading, chartData } = useDashboard(monthParams);
 
     useEffect(() => {
-        const month = selectedMonth ? Number(selectedMonth) : undefined;
-        const year  = selectedMonth ? new Date().getFullYear() : undefined;
-        webClient.loadDashboard(month, year);
-    }, [selectedMonth]);
-
-    useEffect(() => {
-        if (chartData.length > 0) webClient.renderChart(chartData);
+        if (chartData.length > 0) console.log('Rendering chart with data:', chartData);
     }, [chartData]);
 
     useEffect(() => {
-        if (ranking.length > 0) webClient.renderTable(ranking);
+        if (ranking.length > 0) console.log('Rendering table with data:', ranking);
     }, [ranking]);
 
     return (

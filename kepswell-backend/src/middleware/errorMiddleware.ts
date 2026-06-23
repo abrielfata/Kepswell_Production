@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ENV } from '../config/env';
+import { AppError } from '../utils/AppError';
 
 export const errorHandler = (
     err: any,
@@ -7,8 +8,18 @@ export const errorHandler = (
     res: Response,
     next: NextFunction
 ) => {
-    const status  = err.status || err.statusCode || 500;
-    const message = err.message || 'Internal server error';
+    let status = 500;
+    let message = 'Internal server error';
+
+    if (err instanceof AppError) {
+        status = err.statusCode;
+        message = err.message;
+    } else if (err.status || err.statusCode) {
+        status = err.status || err.statusCode;
+        message = err.message;
+    } else if (err instanceof Error) {
+        message = err.message;
+    }
 
     console.error(`❌ [${status}] ${message}`);
 

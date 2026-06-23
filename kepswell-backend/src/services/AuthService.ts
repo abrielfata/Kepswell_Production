@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { UserRepository } from '../repositories/UserRepository';
 import { ENV } from '../config/env';
+import { AppError } from '../utils/AppError';
 
 export type LoginResult = {
     token: string;
@@ -18,17 +19,17 @@ export class AuthService {
 
     async authenticateUser(email: string, password: string): Promise<LoginResult> {
         if (!email || !password) {
-            throw { status: 400, message: 'Email and password are required' };
+            throw new AppError('Email and password are required', 400);
         }
 
         const user = await this.userRepo.findByEmail(email);
         if (!user) {
-            throw { status: 401, message: 'Invalid email or password' };
+            throw new AppError('Invalid email or password', 401);
         }
 
         const isValid = await bcrypt.compare(password, user.password_hash);
         if (!isValid) {
-            throw { status: 401, message: 'Invalid email or password' };
+            throw new AppError('Invalid email or password', 401);
         }
 
         const token = jwt.sign(
@@ -50,7 +51,7 @@ export class AuthService {
 
     async getMe(id: number) {
         const user = await this.userRepo.findById(id);
-        if (!user) throw { status: 404, message: 'User not found' };
+        if (!user) throw new AppError('User not found', 404);
         return user;
     }
 }
