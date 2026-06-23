@@ -3,7 +3,7 @@ import { Box, TextField, Button, Typography, Alert, CircularProgress, Divider } 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { webClient } from '../api/WebClient';
+import { loginSchema } from '../utils/validations';
 
 export default function LoginPage() {
     const [email, setEmail]       = useState('');
@@ -19,10 +19,11 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
 
-        if (!webClient.validateLoginForm(email, password)) {
-            const msg = 'Email tidak valid atau password terlalu pendek';
+        const parseResult = loginSchema.safeParse({ email, password });
+        if (!parseResult.success) {
+            const msg = parseResult.error.issues[0].message;
             setError(msg);
-            webClient.showNotification(msg, 'error');
+            showNotification(msg, 'error');
             return;
         }
 

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { HostRepository, HostRow } from '../repositories/HostRepository';
+import { AppError } from '../utils/AppError';
 
 
 
@@ -31,20 +32,20 @@ const HOST_NAME_RULES = {
  */
 function validateHostName(name: string): void {
     if (name.length < HOST_NAME_RULES.minChars) {
-        throw { status: 400, message: `Nama terlalu pendek (min. ${HOST_NAME_RULES.minChars} karakter)` };
+        throw new AppError(`Nama terlalu pendek (min. ${HOST_NAME_RULES.minChars} karakter)`, 400);
     }
 
     if (name.length > HOST_NAME_RULES.maxChars) {
-        throw { status: 400, message: `Nama terlalu panjang (maks. ${HOST_NAME_RULES.maxChars} karakter)` };
+        throw new AppError(`Nama terlalu panjang (maks. ${HOST_NAME_RULES.maxChars} karakter)`, 400);
     }
 
     const wordCount = name.split(' ').filter(w => w.length > 0).length;
     if (wordCount < HOST_NAME_RULES.minWords) {
-        throw { status: 400, message: 'Nama harus terdiri dari minimal 2 kata' };
+        throw new AppError('Nama harus terdiri dari minimal 2 kata', 400);
     }
 
     if (!HOST_NAME_RULES.pattern.test(name)) {
-        throw { status: 400, message: 'Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof' };
+        throw new AppError('Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof', 400);
     }
 }
 
@@ -60,10 +61,7 @@ export class HostService {
             const exists = await this.hostRepo.registrationCodeExists(code);
             if (!exists) return code;
         }
-        throw {
-            status: 503,
-            message: 'Could not generate a unique registration code; try again',
-        };
+        throw new AppError('Could not generate a unique registration code; try again', 503);
     }
 
     /** Pastikan host yang belum aktivasi punya tepat satu kode pending (data lama / tanpa baris kode). */
@@ -88,14 +86,14 @@ export class HostService {
 
     async findHostById(id: number): Promise<HostRow> {
         const host = await this.hostRepo.findById(id);
-        if (!host) throw { status: 404, message: 'Host tidak ditemukan' };
+        if (!host) throw new AppError('Host tidak ditemukan', 404);
         if (host.telegram_chat_id) return host;
         return this.ensurePendingRegistrationCode(host);
     }
 
     async registerNewHost(data: { full_name: string }): Promise<HostRow> {
         if (!data.full_name?.trim()) {
-            throw { status: 400, message: 'Nama lengkap wajib diisi' };
+            throw new AppError('Nama lengkap wajib diisi', 400);
         }
 
         const normalized = normalizeHostName(data.full_name);
@@ -110,11 +108,11 @@ export class HostService {
 
     async update(id: number, data: { full_name?: string }) {
         const existing = await this.hostRepo.findById(id);
-        if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
+        if (!existing) throw new AppError('Host tidak ditemukan', 404);
 
         if (data.full_name !== undefined) {
             if (!data.full_name.trim()) {
-                throw { status: 400, message: 'Nama lengkap wajib diisi' };
+                throw new AppError('Nama lengkap wajib diisi', 400);
             }
             const normalized = normalizeHostName(data.full_name);
             validateHostName(normalized);
@@ -126,7 +124,7 @@ export class HostService {
 
     async removeHostData(id: number): Promise<void> {
         const existing = await this.hostRepo.findById(id);
-        if (!existing) throw { status: 404, message: 'Host tidak ditemukan' };
+        if (!existing) throw new AppError('Host tidak ditemukan', 404);
         await this.hostRepo.deactivateHostRecord(id);
     }
 
