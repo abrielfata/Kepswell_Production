@@ -22,7 +22,7 @@ export function useDashboard(monthParams: any) {
     const statsLoading = dashboardLoading;
     const rankLoading = dashboardLoading;
 
-    const chartData = ranking.slice(0, 10).map(h => ({
+    const chartData = ranking.slice(0, 10).map((h: any) => ({
         name: h.host_name.split(' ')[0],
         GMV: Math.round(Number(h.total_gmv) / 1_000),
     }));
