@@ -8,7 +8,7 @@ export class AuthController {
         try {
             const { email, password } = req.body;
             const result = await this.authService.authenticateUser(email, password);
-            res.status(200).json({ success: true, data: result });
+            return res.status(200).json({ success: true, data: result });
         } catch (err) {
             next(err);
         }
@@ -17,7 +17,7 @@ export class AuthController {
     getMe = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await this.authService.getMe(req.user!.id);
-            res.status(200).json({ success: true, data: user });
+            return res.status(200).json({ success: true, data: user });
         } catch (err) {
             next(err);
         }

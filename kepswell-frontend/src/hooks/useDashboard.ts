@@ -1,22 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
-import { reportsAPI } from '../api/reports';
-import type { RankedHost, AvailableMonth } from '../types';
+import { useQuery } from '@tanstack/react-query';import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../contexts/NotificationContext';
+import { WebClient } from '../api/WebClient';
 
 export function useDashboard(monthParams: any) {
+    const navigate = useNavigate();
+    const { showNotification } = useNotification();
+    const webClient = new WebClient(navigate, showNotification, undefined, () => { });
+
     const { data: monthsData } = useQuery({
         queryKey: ['available-months'],
-        queryFn: () => reportsAPI.getAvailableMonths().then(r => r.data.data as AvailableMonth[]),
+        queryFn: () => webClient.handleFetchAvailableMonths(),
     });
 
-    const { data: stats, isLoading: statsLoading } = useQuery({
-        queryKey: ['statistics', monthParams],
-        queryFn: () => reportsAPI.getStatistics(monthParams).then(r => r.data.data),
+    const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
+        queryKey: ['dashboard', monthParams],
+        queryFn: () => webClient.handleFetchDashboardData(monthParams),
     });
 
-    const { data: ranking = [], isLoading: rankLoading } = useQuery({
-        queryKey: ['ranking', monthParams],
-        queryFn: () => reportsAPI.getRanking(monthParams).then(r => r.data.data as RankedHost[]),
-    });
+    const stats = dashboardData?.statistics || null;
+    const ranking = dashboardData?.ranking || [];
+    const statsLoading = dashboardLoading;
+    const rankLoading = dashboardLoading;
 
     const chartData = ranking.slice(0, 10).map(h => ({
         name: h.host_name.split(' ')[0],

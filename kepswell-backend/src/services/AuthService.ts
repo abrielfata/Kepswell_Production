@@ -27,7 +27,7 @@ export class AuthService {
             throw new AppError('Invalid email or password', 401);
         }
 
-        const isValid = await bcrypt.compare(password, user.password_hash);
+        const isValid = await this.verifyPassword(password, user.password_hash);
         if (!isValid) {
             throw new AppError('Invalid email or password', 401);
         }
@@ -53,5 +53,9 @@ export class AuthService {
         const user = await this.userRepo.findById(id);
         if (!user) throw new AppError('User not found', 404);
         return user;
+    }
+
+    private async verifyPassword(password: string, hash: string): Promise<boolean> {
+        return await bcrypt.compare(password, hash);
     }
 }
