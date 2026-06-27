@@ -49,10 +49,10 @@ export default function DashboardPage() {
                     <Select
                         displayEmpty value={selectedMonth}
                         onChange={e => setSelectedMonth(e.target.value as number)}
-                        renderValue={v => !v ? 'Semua periode' : monthsData?.find(m => m.month === Number(v))?.display_name ?? String(v)}
+                        renderValue={v => !v ? 'Semua periode' : monthsData?.find((m: any) => m.month === Number(v))?.display_name ?? String(v)}
                     >
                         <MenuItem value="">Semua periode</MenuItem>
-                        {monthsData?.map(m => (
+                        {monthsData?.map((m: any) => (
                             <MenuItem key={`${m.year}-${m.month}`} value={m.month}>{m.display_name}</MenuItem>
                         ))}
                     </Select>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
                                                 {Array(4).fill(0).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}
                                             </TableRow>
                                         ))
-                                        : ranking.slice(0, 8).map(h => (
+                                        : ranking.slice(0, 8).map((h: any) => (
                                             <TableRow key={h.host_id}>
                                                 <TableCell sx={{ width: 36 }}>
                                                     <Typography sx={{
@@ -196,7 +196,7 @@ export default function DashboardPage() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {ranking.map(h => (
+                                    {ranking.map((h: any) => (
                                         <TableRow key={h.host_id}>
                                             <TableCell>
                                                 <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: h.rank <= 3 ? '#2563EB' : '#374151' }}>
