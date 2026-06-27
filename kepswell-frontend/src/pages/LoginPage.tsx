@@ -3,7 +3,7 @@ import { Box, TextField, Button, Typography, Alert, CircularProgress, Divider } 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { loginSchema } from '../utils/validations';
+import { WebClient } from '../api/WebClient';
 
 export default function LoginPage() {
     const [email, setEmail]       = useState('');
@@ -11,7 +11,7 @@ export default function LoginPage() {
     const [error, setError]       = useState('');
     const [loading, setLoading]   = useState(false);
 
-    const { login } = useAuth();
+    const { attemptLogin } = useAuth();
     const navigate  = useNavigate();
     const { showNotification } = useNotification();
 
@@ -19,32 +19,11 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
 
-        const parseResult = loginSchema.safeParse({ email, password });
-        if (!parseResult.success) {
-            const msg = parseResult.error.issues[0].message;
-            setError(msg);
-            showNotification(msg, 'error');
-            return;
-        }
+        const webClient = new WebClient(navigate, showNotification, attemptLogin, setError);
 
         setLoading(true);
-        try {
-            const ok = await login(email, password);
-            if (ok) {
-                showNotification('Login berhasil', 'success');
-                navigate('/');
-            } else {
-                const msg = 'Email atau password tidak valid';
-                setError(msg);
-                showNotification(msg, 'error');
-            }
-        } catch (err: any) {
-            const msg = err.response?.data?.message || 'Terjadi kesalahan. Coba lagi nanti.';
-            setError(msg);
-            showNotification(msg, 'error');
-        } finally {
-            setLoading(false);
-        }
+        await webClient.handleSubmit(email, password);
+        setLoading(false);
     };
 
     return (

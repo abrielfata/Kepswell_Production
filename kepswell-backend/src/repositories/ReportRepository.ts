@@ -97,7 +97,7 @@ export class ReportRepository {
         return result.rows[0];
     }
 
-    async modifyReportStatus(id: number, status: string, notes?: string): Promise<Report | null> {
+    async updateStatus(id: number, status: string, notes?: string): Promise<Report | null> {
         const result = await query(
             `UPDATE reports SET status = $1, notes = $2, updated_at = CURRENT_TIMESTAMP
              WHERE id = $3 RETURNING *`,

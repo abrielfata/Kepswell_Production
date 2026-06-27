@@ -24,6 +24,13 @@ export class RankingService {
         const hosts = await this.reportRepo.getHostPerformance(month, year);
         if (hosts.length === 0) return [];
 
+        const rankedHosts = this.calculateFinalScore(hosts);
+        this.sortRankings(rankedHosts);
+
+        return rankedHosts;
+    }
+
+    private calculateFinalScore(hosts: HostPerformance[]): RankedHost[] {
         const normalize = (value: number, min: number, max: number): number => {
             if (max === min) return 0;
             return (value - min) / (max - min);
@@ -41,7 +48,7 @@ export class RankingService {
             gmvPerHour: { min: Math.min(...gmvPerHourValues), max: Math.max(...gmvPerHourValues) },
         };
 
-        const ranked: RankedHost[] = hosts.map(host => {
+        return hosts.map(host => {
             const score_gmv          = normalize(Number(host.total_gmv),            minMax.gmv.min,        minMax.gmv.max);
             const score_sessions     = normalize(Number(host.approved_reports),     minMax.sessions.min,   minMax.sessions.max);
             const score_duration     = normalize(Number(host.total_duration_minutes), minMax.duration.min, minMax.duration.max);
@@ -63,10 +70,10 @@ export class RankingService {
                 rank: 0,
             };
         });
+    }
 
-        ranked.sort((a, b) => b.final_score - a.final_score);
-        ranked.forEach((h, i) => { h.rank = i + 1; });
-
-        return ranked;
+    private sortRankings(rankedHosts: RankedHost[]): void {
+        rankedHosts.sort((a, b) => b.final_score - a.final_score);
+        rankedHosts.forEach((h, i) => { h.rank = i + 1; });
     }
 }

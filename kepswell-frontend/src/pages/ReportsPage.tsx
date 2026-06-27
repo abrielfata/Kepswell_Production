@@ -9,6 +9,9 @@ import {
 import type { Report } from '../types';
 import { useReports } from '../hooks/useReports';
 import { formatCurrency, formatDuration, formatDateTime } from '../utils/format';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../contexts/NotificationContext';
+import { WebClient } from '../api/WebClient';
 
 const STATUS_COLOR: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
     APPROVED: 'success',
@@ -36,6 +39,9 @@ export default function ReportsPage() {
     };
 
     const { reports, total, monthsData, updateStatus, isPending } = useReports(params);
+    const navigate = useNavigate();
+    const { showNotification } = useNotification();
+    const webClient = new WebClient(navigate, showNotification, undefined, () => {});
 
     return (
         <Box>
@@ -157,15 +163,13 @@ export default function ReportsPage() {
                     <Button onClick={() => setSelectedReport(null)} sx={{ color: '#6b7280' }}>Batal</Button>
                     <Button variant="outlined" color="error" disabled={isPending}
                         onClick={async () => {
-                            await updateStatus({ id: selectedReport!.id, status: 'REJECTED' });
-                            setSelectedReport(null);
+                            await webClient.handleVerifyReport(selectedReport!.id, 'REJECTED', updateStatus, () => setSelectedReport(null));
                         }}>
                         Tolak
                     </Button>
                     <Button variant="contained" color="success" disabled={isPending}
                         onClick={async () => {
-                            await updateStatus({ id: selectedReport!.id, status: 'APPROVED' });
-                            setSelectedReport(null);
+                            await webClient.handleVerifyReport(selectedReport!.id, 'APPROVED', updateStatus, () => setSelectedReport(null));
                         }}>
                         Setujui
                     </Button>

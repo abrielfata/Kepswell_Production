@@ -8,17 +8,6 @@ function formatRegistrationCode(raw: string): string {
     return raw.trim().toUpperCase();
 }
 
-/**
- * Normalisasi nama host sebelum disimpan:
- * - Trim ujung
- * - Ganti spasi ganda (atau lebih) di tengah dengan 1 spasi
- */
-function normalizeHostName(raw: string): string {
-    return raw.trim().replace(/\s{2,}/g, ' ');
-}
-
-
-
 const HOST_NAME_RULES = {
     minChars: 3,
     maxChars: 100,
@@ -26,33 +15,35 @@ const HOST_NAME_RULES = {
     pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\s.']*$/,
 } as const;
 
-/**
- * Validasi format nama host. Melempar { status, message } jika tidak valid.
- * Dipanggil SETELAH normalisasi sehingga spasi ganda sudah bersih.
- */
-function validateHostName(name: string): void {
-    if (name.length < HOST_NAME_RULES.minChars) {
-        throw new AppError(`Nama terlalu pendek (min. ${HOST_NAME_RULES.minChars} karakter)`, 400);
-    }
-
-    if (name.length > HOST_NAME_RULES.maxChars) {
-        throw new AppError(`Nama terlalu panjang (maks. ${HOST_NAME_RULES.maxChars} karakter)`, 400);
-    }
-
-    const wordCount = name.split(' ').filter(w => w.length > 0).length;
-    if (wordCount < HOST_NAME_RULES.minWords) {
-        throw new AppError('Nama harus terdiri dari minimal 2 kata', 400);
-    }
-
-    if (!HOST_NAME_RULES.pattern.test(name)) {
-        throw new AppError('Nama hanya boleh mengandung huruf, spasi, titik, atau apostrof', 400);
-    }
-}
-
-
-
 export class HostService {
     private hostRepo = new HostRepository();
+
+    private normalizeHostName(raw: string): string {
+        return raw.trim().replace(/\s{2,}/g, ' ');
+    }
+
+    private validateHostName(name: string): void {
+        if (name.length < HOST_NAME_RULES.minChars) {
+            throw new AppError(`Nama terlalu pendek (min. ${HOST_NAME_RULES.minChars} karakter)`, 400);
+        }
+
+        if (name.length > HOST_NAME_RULES.maxChars) {
+            throw new AppError(`Nama terlalu panjang (maks. ${HOST_NAME_RULES.maxChars} karakter)`, 400);
+        }
+
+        const words = name.split(' ');
+        if (words.length < HOST_NAME_RULES.minWords) {
+            throw new AppError(`Tolong masukkan nama lengkap (min. ${HOST_NAME_RULES.minWords} kata)`, 400);
+        }
+
+        if (!HOST_NAME_RULES.pattern.test(name)) {
+            throw new AppError(
+                'Nama hanya boleh berisi huruf, spasi, titik (.), atau tanda kutip tunggal (\')',
+                400
+            );
+        }
+    }
+
 
     private async generateRegistrationCode(): Promise<string> {
         const maxAttempts = 50;
@@ -96,8 +87,8 @@ export class HostService {
             throw new AppError('Nama lengkap wajib diisi', 400);
         }
 
-        const normalized = normalizeHostName(data.full_name);
-        validateHostName(normalized);
+        const normalized = this.normalizeHostName(data.full_name);
+        this.validateHostName(normalized);
 
 
         const host = await this.hostRepo.insertHostRecord({ full_name: normalized });
@@ -114,17 +105,22 @@ export class HostService {
             if (!data.full_name.trim()) {
                 throw new AppError('Nama lengkap wajib diisi', 400);
             }
-            const normalized = normalizeHostName(data.full_name);
-            validateHostName(normalized);
+            const normalized = this.normalizeHostName(data.full_name);
+            this.validateHostName(normalized);
             data.full_name = normalized;
         }
 
         return this.hostRepo.update(id, data);
     }
 
-    async removeHostData(id: number): Promise<void> {
+    private async findHostOrFail(id: number) {
         const existing = await this.hostRepo.findById(id);
         if (!existing) throw new AppError('Host tidak ditemukan', 404);
+        return existing;
+    }
+
+    async removeHostData(id: number): Promise<void> {
+        await this.findHostOrFail(id);
         await this.hostRepo.deactivateHostRecord(id);
     }
 

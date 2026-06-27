@@ -28,7 +28,7 @@ export class ReportService {
         return this.reportRepo.insertReportRecord(data);
     }
 
-    async processReportStatus(id: number, status: string, notes?: string) {
+    async verifyReportData(id: number, status: string, notes?: string) {
         const valid = Object.values(REPORT_STATUS) as string[];
         if (!valid.includes(status)) {
             throw new AppError('Invalid status', 400);
@@ -37,7 +37,7 @@ export class ReportService {
         const report = await this.reportRepo.findById(id);
         if (!report) throw new AppError('Report not found', 404);
 
-        const updated = await this.reportRepo.modifyReportStatus(id, status, notes);
+        const updated = await this.reportRepo.updateStatus(id, status, notes);
 
 
         if (status === REPORT_STATUS.APPROVED || status === REPORT_STATUS.REJECTED) {

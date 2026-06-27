@@ -9,25 +9,22 @@ import { ContentCopy, Check } from '@mui/icons-material';
 import type { Host } from '../types';
 import { formatDate } from '../utils/format';
 import { useHosts } from '../hooks/useHosts';
-import { hostSchema } from '../utils/validations';
+import { WebClient } from '../api/WebClient';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function HostsPage() {
-    const [createOpen, setCreateOpen]   = useState(false);
-    const [deleteOpen, setDeleteOpen]   = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
     const [hostToDelete, setHostToDelete] = useState<Host | null>(null);
-    const [fullName, setFullName]       = useState('');
-    const [nameError, setNameError]     = useState('');
-    const [copiedId, setCopiedId]       = useState<number | null>(null);
+    const [fullName, setFullName] = useState('');
+    const [nameError, setNameError] = useState('');
+    const [copiedId, setCopiedId] = useState<number | null>(null);
 
     const { hosts, createHost, creating, deleteHost } = useHosts();
-
-    function validateName(value: string): string {
-        const result = hostSchema.safeParse({ full_name: value });
-        if (!result.success) {
-            return result.error.issues[0].message;
-        }
-        return '';
-    }
+    const navigate = useNavigate();
+    const { showNotification } = useNotification();
+    const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
 
     const copyRegisterCommand = (host: Host) => {
         const code = host.pending_registration_code;
@@ -48,21 +45,18 @@ export default function HostsPage() {
         setDeleteOpen(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (hostToDelete) {
-            deleteHost(hostToDelete.id);
-            setDeleteOpen(false);
-            setHostToDelete(null);
+            await webClient.confirmDelete(hostToDelete.id, deleteHost, () => {
+                setDeleteOpen(false);
+                setHostToDelete(null);
+            });
         }
     };
 
     const handleCreate = async () => {
-        try {
-            await createHost(fullName);
-            handleClose();
-        } catch (error: any) {
-            setNameError(error.message);
-        }
+        const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
+        await webClient.handleTambahHost(fullName, createHost, handleClose);
     };
 
     return (
@@ -173,18 +167,18 @@ export default function HostsPage() {
                             Nama Lengkap
                         </Typography>
                         <TextField
-                            placeholder="Contoh: Siti Rahma"
+                            placeholder="Contoh: Abriel Fata"
                             value={fullName}
                             onChange={e => {
                                 const val = e.target.value;
                                 setFullName(val);
-                                setNameError(validateName(val));
+                                setNameError(webClient.validateName(val) || '');
                             }}
                             fullWidth autoFocus
                             error={!!nameError}
                             helperText={nameError || ' '}
                             onKeyDown={e => {
-                                if (e.key === 'Enter' && fullName.trim() && !validateName(fullName)) handleCreate();
+                                if (e.key === 'Enter' && fullName.trim() && !webClient.validateName(fullName)) handleCreate();
                             }}
                         />
                     </Box>
@@ -194,7 +188,7 @@ export default function HostsPage() {
                         Batal
                     </Button>
                     <Button variant="contained"
-                        disabled={!fullName.trim() || !!validateName(fullName) || creating}
+                        disabled={!fullName.trim() || !!webClient.validateName(fullName) || creating}
                         onClick={handleCreate}>
                         Buat Host
                     </Button>

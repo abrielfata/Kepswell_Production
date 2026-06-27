@@ -10,7 +10,7 @@ export class HostController {
                 ? req.query.is_active === 'true'
                 : undefined;
             const hosts = await this.hostService.getAll(isActive);
-            res.status(200).json({ success: true, data: hosts });
+            return res.status(200).json({ success: true, data: hosts });
         } catch (err) {
             next(err);
         }
@@ -19,7 +19,7 @@ export class HostController {
     getById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const host = await this.hostService.findHostById(Number(req.params.id));
-            res.status(200).json({ success: true, data: host });
+            return res.status(200).json({ success: true, data: host });
         } catch (err) {
             next(err);
         }
@@ -28,7 +28,7 @@ export class HostController {
     create = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const host = await this.hostService.registerNewHost(req.body);
-            res.status(201).json({ success: true, data: host });
+            return res.status(201).json({ success: true, data: host });
         } catch (err) {
             next(err);
         }
@@ -37,7 +37,7 @@ export class HostController {
     update = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const host = await this.hostService.update(Number(req.params.id), req.body);
-            res.status(200).json({ success: true, data: host });
+            return res.status(200).json({ success: true, data: host });
         } catch (err) {
             next(err);
         }
@@ -46,7 +46,7 @@ export class HostController {
     delete = async (req: Request, res: Response, next: NextFunction) => {
         try {
             await this.hostService.removeHostData(Number(req.params.id));
-            res.status(200).json({ success: true, message: 'Host berhasil dihapus' });
+            return res.status(200).json({ success: true, message: 'Host berhasil dihapus' });
         } catch (err) {
             next(err);
         }

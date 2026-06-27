@@ -6,7 +6,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     /** @returns true jika login berhasil, false jika kredensial salah (401). Error lain tetap di-throw. */
-    login: (email: string, password: string) => Promise<boolean>;
+    attemptLogin: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
 }
 
@@ -26,9 +26,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .finally(() => setLoading(false));
     }, []);
 
-    const login = async (email: string, password: string): Promise<boolean> => {
+    const attemptLogin = async (email: string, password: string): Promise<boolean> => {
         try {
-            const res = await authAPI.login(email, password);
+            const res = await authAPI.sendLoginRequest(email, password);
             const { token, user: userData } = res.data.data;
             localStorage.setItem('token', token);
             setUser(userData);
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, attemptLogin, logout }}>
             {children}
         </AuthContext.Provider>
     );
