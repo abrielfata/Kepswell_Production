@@ -3,7 +3,7 @@ import {
     Box, Card, CardContent, Typography, Table, TableBody,
     TableCell, TableContainer, TableHead, TableRow, Paper,
     Chip, Button, Dialog, DialogTitle, DialogContent,
-    DialogActions, TextField, IconButton, Tooltip, Alert
+    DialogActions, TextField, IconButton, Tooltip, Alert, Skeleton
 } from '@mui/material';
 import { ContentCopy, Check } from '@mui/icons-material';
 import type { Host } from '../types';
@@ -21,7 +21,7 @@ export default function HostsPage() {
     const [nameError, setNameError] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
 
-    const { hosts, createHost, creating, deleteHost } = useHosts();
+    const { hosts, createHost, creating, deleteHost, isLoading } = useHosts();
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
@@ -94,59 +94,69 @@ export default function HostsPage() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {hosts.map(host => (
-                                    <TableRow key={host.id}>
-                                        <TableCell>
-                                            <Typography sx={{
-                                                fontFamily: 'monospace',
-                                                fontWeight: 600,
-                                                fontSize: '0.82rem',
-                                                color: '#2563EB',
-                                                letterSpacing: '0.03em',
-                                            }}>
-                                                {host.host_code}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography sx={{ fontWeight: 500, fontSize: '0.85rem' }}>{host.full_name}</Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            {host.telegram_chat_id
-                                                ? <Chip label="Terhubung" size="small" color="success" />
-                                                : <Chip label="Belum aktivasi" size="small" sx={{ bgcolor: '#f9fafb', color: '#6b7280' }} />
-                                            }
-                                        </TableCell>
-                                        <TableCell>
-                                            {!host.telegram_chat_id && host.pending_registration_code ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#374151' }}>
-                                                        {host.pending_registration_code}
-                                                    </Typography>
-                                                    <Tooltip title={copiedId === host.id ? 'Tersalin!' : 'Salin /daftar KODE'}>
-                                                        <IconButton size="small" onClick={() => copyRegisterCommand(host)}
-                                                            sx={{ color: copiedId === host.id ? '#16a34a' : '#9ca3af' }}>
-                                                            {copiedId === host.id
-                                                                ? <Check sx={{ fontSize: 14 }} />
-                                                                : <ContentCopy sx={{ fontSize: 14 }} />
-                                                            }
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Box>
-                                            ) : (
-                                                <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>—</Typography>
-                                            )}
-                                        </TableCell>
-                                        <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>
-                                        <TableCell>
-                                            <Button size="small" variant="text"
-                                                color="error"
-                                                onClick={() => handleDeleteClick(host)}>
-                                                Hapus
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {hosts.length === 0 && (
+                                {isLoading ? (
+                                    Array(5).fill(0).map((_, i) => (
+                                        <TableRow key={i}>
+                                            {Array(6).fill(0).map((__, j) => (
+                                                <TableCell key={j}><Skeleton animation="wave" height={24} /></TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    hosts.map(host => (
+                                        <TableRow key={host.id}>
+                                            <TableCell>
+                                                <Typography sx={{
+                                                    fontFamily: 'monospace',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.82rem',
+                                                    color: '#2563EB',
+                                                    letterSpacing: '0.03em',
+                                                }}>
+                                                    {host.host_code}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography sx={{ fontWeight: 500, fontSize: '0.85rem' }}>{host.full_name}</Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                {host.telegram_chat_id
+                                                    ? <Chip label="Terhubung" size="small" color="success" />
+                                                    : <Chip label="Belum aktivasi" size="small" sx={{ bgcolor: '#f9fafb', color: '#6b7280' }} />
+                                                }
+                                            </TableCell>
+                                            <TableCell>
+                                                {!host.telegram_chat_id && host.pending_registration_code ? (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                        <Typography sx={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#374151' }}>
+                                                            {host.pending_registration_code}
+                                                        </Typography>
+                                                        <Tooltip title={copiedId === host.id ? 'Tersalin!' : 'Salin /daftar KODE'}>
+                                                            <IconButton size="small" onClick={() => copyRegisterCommand(host)}
+                                                                sx={{ color: copiedId === host.id ? '#16a34a' : '#9ca3af' }}>
+                                                                {copiedId === host.id
+                                                                    ? <Check sx={{ fontSize: 14 }} />
+                                                                    : <ContentCopy sx={{ fontSize: 14 }} />
+                                                                }
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Box>
+                                                ) : (
+                                                    <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af' }}>—</Typography>
+                                                )}
+                                            </TableCell>
+                                            <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>
+                                            <TableCell>
+                                                <Button size="small" variant="text"
+                                                    color="error"
+                                                    onClick={() => handleDeleteClick(host)}>
+                                                    Hapus
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                                {!isLoading && hosts.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#9ca3af' }}>
                                             Belum ada host — klik &quot;Tambah Host&quot; untuk mulai

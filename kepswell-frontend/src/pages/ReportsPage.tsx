@@ -4,7 +4,7 @@ import {
     TableCell, TableContainer, TableHead, TableRow, Paper,
     Chip, Button, Select, MenuItem, FormControl,
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TablePagination, Stack
+    TablePagination, Stack, Skeleton
 } from '@mui/material';
 import type { Report } from '../types';
 import { useReports } from '../hooks/useReports';
@@ -38,7 +38,7 @@ export default function ReportsPage() {
         ...(monthFilter ? { month: Number(monthFilter) } : {}),
     };
 
-    const { reports, total, monthsData, updateStatus, isPending } = useReports(params);
+    const { reports, total, monthsData, updateStatus, isPending, isLoading } = useReports(params);
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, () => {});
@@ -98,33 +98,43 @@ export default function ReportsPage() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {reports.map((r: any) => (
-                                    <TableRow key={r.id}>
-                                        <TableCell sx={{ color: '#9ca3af' }}>#{r.id}</TableCell>
-                                        <TableCell sx={{ fontWeight: 500 }}>{r.host_name}</TableCell>
-                                        <TableCell align="right">{formatCurrency(r.reported_gmv)}</TableCell>
-                                        <TableCell align="right">{r.reported_pesanan_sku || 0} SKU</TableCell>
-                                        <TableCell align="right" sx={{ color: '#6b7280' }}>{formatDuration(r.live_duration_minutes)}</TableCell>
-                                        <TableCell>
-                                            <Chip label={STATUS_LABEL[r.status] ?? r.status} size="small"
-                                                color={STATUS_COLOR[r.status] ?? 'default'} />
-                                        </TableCell>
-                                        <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                                            {r.verified_by_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
-                                        </TableCell>
-                                        <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
-                                        <TableCell>
-                                            {r.status === 'PENDING' && (
-                                                <Button size="small" variant="outlined"
-                                                    onClick={() => setSelectedReport(r)}
-                                                    sx={{ whiteSpace: 'nowrap' }}>
-                                                    Tinjau
-                                                </Button>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {reports.length === 0 && (
+                                {isLoading ? (
+                                    Array(5).fill(0).map((_, i) => (
+                                        <TableRow key={i}>
+                                            {Array(9).fill(0).map((__, j) => (
+                                                <TableCell key={j}><Skeleton animation="wave" height={24} /></TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    reports.map((r: any) => (
+                                        <TableRow key={r.id}>
+                                            <TableCell sx={{ color: '#9ca3af' }}>#{r.id}</TableCell>
+                                            <TableCell sx={{ fontWeight: 500 }}>{r.host_name}</TableCell>
+                                            <TableCell align="right">{formatCurrency(r.reported_gmv)}</TableCell>
+                                            <TableCell align="right">{r.reported_pesanan_sku || 0} SKU</TableCell>
+                                            <TableCell align="right" sx={{ color: '#6b7280' }}>{formatDuration(r.live_duration_minutes)}</TableCell>
+                                            <TableCell>
+                                                <Chip label={STATUS_LABEL[r.status] ?? r.status} size="small"
+                                                    color={STATUS_COLOR[r.status] ?? 'default'} />
+                                            </TableCell>
+                                            <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                                                {r.verified_by_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
+                                            </TableCell>
+                                            <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
+                                            <TableCell>
+                                                {r.status === 'PENDING' && (
+                                                    <Button size="small" variant="outlined"
+                                                        onClick={() => setSelectedReport(r)}
+                                                        sx={{ whiteSpace: 'nowrap' }}>
+                                                        Tinjau
+                                                    </Button>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                                {!isLoading && reports.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={9} align="center" sx={{ py: 6, color: '#9ca3af' }}>
                                             Tidak ada laporan
