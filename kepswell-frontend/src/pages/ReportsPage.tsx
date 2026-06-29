@@ -92,12 +92,13 @@ export default function ReportsPage() {
                                     <TableCell align="right">Pesanan</TableCell>
                                     <TableCell align="right">Durasi</TableCell>
                                     <TableCell>Status</TableCell>
+                                    <TableCell>Diverifikasi oleh</TableCell>
                                     <TableCell>Tanggal</TableCell>
                                     <TableCell>Aksi</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {reports.map(r => (
+                                {reports.map((r: any) => (
                                     <TableRow key={r.id}>
                                         <TableCell sx={{ color: '#9ca3af' }}>#{r.id}</TableCell>
                                         <TableCell sx={{ fontWeight: 500 }}>{r.host_name}</TableCell>
@@ -107,11 +108,9 @@ export default function ReportsPage() {
                                         <TableCell>
                                             <Chip label={STATUS_LABEL[r.status] ?? r.status} size="small"
                                                 color={STATUS_COLOR[r.status] ?? 'default'} />
-                                            {r.verifier_name && (
-                                                <Typography sx={{ fontSize: '0.65rem', color: '#6b7280', mt: 0.5, display: 'block' }}>
-                                                    Oleh: {r.verifier_name.split(' ')[0]}
-                                                </Typography>
-                                            )}
+                                        </TableCell>
+                                        <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                                            {r.verified_by_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
                                         </TableCell>
                                         <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
                                         <TableCell>
@@ -127,7 +126,7 @@ export default function ReportsPage() {
                                 ))}
                                 {reports.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={8} align="center" sx={{ py: 6, color: '#9ca3af' }}>
+                                        <TableCell colSpan={9} align="center" sx={{ py: 6, color: '#9ca3af' }}>
                                             Tidak ada laporan
                                         </TableCell>
                                     </TableRow>

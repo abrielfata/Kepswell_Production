@@ -1,12 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { ReportService } from '../services/ReportService';
-import { AuthService } from '../services/AuthService';
 import { RankingService } from '../services/RankingService';
 
 export class ReportController {
     private reportService = new ReportService();
     private rankingService = new RankingService();
-    private authService = new AuthService();
 
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -38,9 +36,9 @@ export class ReportController {
     verify = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { status, notes } = req.body;
-            const verified_by = req.user?.id;
+            const verifiedBy = req.user?.id; // ID manajer yang sedang login
             const report = await this.reportService.verifyReportData(
-                Number(req.params.id), status, notes, verified_by
+                Number(req.params.id), status, notes, verifiedBy
             );
             res.status(200).json({ success: true, data: report });
         } catch (err) {

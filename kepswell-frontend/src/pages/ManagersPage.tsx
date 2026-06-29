@@ -11,12 +11,12 @@ import { useNotification } from '../contexts/NotificationContext';
 import { WebClient } from '../api/WebClient';
 import type { User } from '../types';
 
-export default function ManagersPage() {
+export default function AdminsPage() {
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, () => {});
 
-    const [managers, setManagers] = useState<User[]>([]);
+    const [admins, setAdmins] = useState<User[]>([]);
     const [openAdd, setOpenAdd] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -25,13 +25,13 @@ export default function ManagersPage() {
     const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
 
-    const fetchManagers = async () => {
-        const data = await webClient.handleFetchManagers();
-        setManagers(data);
+    const fetchAdmins = async () => {
+        const data = await webClient.handleFetchAdmins();
+        setAdmins(data);
     };
 
     useEffect(() => {
-        fetchManagers();
+        fetchAdmins();
     }, []);
 
     const handleAdd = async () => {
@@ -41,10 +41,10 @@ export default function ManagersPage() {
         }
         setLoading(true);
         try {
-            await webClient.handleCreateManager({ email, full_name: fullName, password, role: 'MANAGER' });
+            await webClient.handleCreateAdmin({ email, full_name: fullName, password, role: 'MANAGER' });
             setOpenAdd(false);
             setEmail(''); setFullName(''); setPassword('');
-            fetchManagers();
+            fetchAdmins();
         } catch (e) {
             // error handled in webclient
         } finally {
@@ -53,11 +53,11 @@ export default function ManagersPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('Apakah Anda yakin ingin menghapus manager ini?')) return;
+        if (!window.confirm('Apakah Anda yakin ingin menghapus admin ini?')) return;
         setLoading(true);
         try {
-            await webClient.handleDeleteManager(id);
-            fetchManagers();
+            await webClient.handleDeleteAdmin(id);
+            fetchAdmins();
         } catch (e) {
             // error handled
         } finally {
@@ -70,7 +70,7 @@ export default function ManagersPage() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
-                        Manajemen Manager
+                        Manajemen Admin
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6b7280' }}>
                         Kelola akun pengguna dan hak akses (Owner / Manager)
@@ -89,7 +89,7 @@ export default function ManagersPage() {
                         borderRadius: 2
                     }}
                 >
-                    Tambah Manager
+                    Tambah Admin
                 </Button>
             </Box>
 
@@ -106,39 +106,39 @@ export default function ManagersPage() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {managers.map((manager) => (
-                            <TableRow key={manager.id}>
-                                <TableCell sx={{ color: '#6b7280' }}>#{manager.id}</TableCell>
-                                <TableCell sx={{ fontWeight: 500 }}>{manager.full_name}</TableCell>
-                                <TableCell>{manager.email}</TableCell>
+                        {admins.map((admin) => (
+                            <TableRow key={admin.id}>
+                                <TableCell sx={{ color: '#6b7280' }}>#{admin.id}</TableCell>
+                                <TableCell sx={{ fontWeight: 500 }}>{admin.full_name}</TableCell>
+                                <TableCell>{admin.email}</TableCell>
                                 <TableCell>
                                     <Chip 
-                                        label={manager.role} 
+                                        label={admin.role} 
                                         size="small"
-                                        color={manager.role === 'OWNER' ? 'primary' : 'default'}
+                                        color={admin.role === 'OWNER' ? 'primary' : 'default'}
                                         sx={{ fontWeight: 600, fontSize: '0.7rem' }}
                                     />
                                 </TableCell>
                                 <TableCell>
                                     <Chip 
-                                        label={manager.is_active ? 'Aktif' : 'Nonaktif'} 
+                                        label={admin.is_active ? 'Aktif' : 'Nonaktif'} 
                                         size="small"
-                                        color={manager.is_active ? 'success' : 'error'}
+                                        color={admin.is_active ? 'success' : 'error'}
                                     />
                                 </TableCell>
                                 <TableCell align="right">
-                                    {manager.role !== 'OWNER' && (
-                                        <IconButton size="small" onClick={() => handleDelete(manager.id)} color="error">
+                                    {admin.role !== 'OWNER' && (
+                                        <IconButton size="small" onClick={() => handleDelete(admin.id)} color="error">
                                             <DeleteIcon fontSize="small" />
                                         </IconButton>
                                     )}
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {managers.length === 0 && (
+                        {admins.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={6} align="center" sx={{ py: 3, color: '#6b7280' }}>
-                                    Belum ada data manager
+                                    Belum ada data admin
                                 </TableCell>
                             </TableRow>
                         )}
@@ -147,7 +147,7 @@ export default function ManagersPage() {
             </TableContainer>
 
             <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>Tambah Manager Baru</DialogTitle>
+                <DialogTitle>Tambah Admin Baru</DialogTitle>
                 <DialogContent>
                     <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <TextField

@@ -48,7 +48,8 @@ export class ReportRepository {
         const total = parseInt(countResult.rows[0].count);
 
         const dataResult = await query(
-            `SELECT r.*, h.full_name as host_name, u.full_name as verifier_name
+            `SELECT r.*, h.full_name as host_name,
+                    u.full_name as verified_by_name
              FROM reports r
              JOIN hosts h ON r.host_id = h.id
              LEFT JOIN users u ON r.verified_by = u.id
@@ -63,7 +64,8 @@ export class ReportRepository {
 
     async findById(id: number): Promise<any | null> {
         const result = await query(
-            `SELECT r.*, h.full_name as host_name, u.full_name as verifier_name
+            `SELECT r.*, h.full_name as host_name,
+                    u.full_name as verified_by_name
              FROM reports r
              JOIN hosts h ON r.host_id = h.id
              LEFT JOIN users u ON r.verified_by = u.id
@@ -99,11 +101,13 @@ export class ReportRepository {
         return result.rows[0];
     }
 
-    async updateStatus(id: number, status: string, notes?: string, verified_by?: number): Promise<Report | null> {
+    async updateStatus(id: number, status: string, notes?: string, verifiedBy?: number): Promise<Report | null> {
         const result = await query(
-            `UPDATE reports SET status = $1, notes = $2, verified_by = $3, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4 RETURNING *`,
-            [status, notes || null, verified_by || null, id]
+            `UPDATE reports
+             SET status = $1, notes = $2, verified_by = $3, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4
+             RETURNING *`,
+            [status, notes || null, verifiedBy || null, id]
         );
         return result.rows[0] || null;
     }
