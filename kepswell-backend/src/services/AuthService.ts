@@ -58,4 +58,14 @@ export class AuthService {
     private async verifyPassword(password: string, hash: string): Promise<boolean> {
         return await bcrypt.compare(password, hash);
     }
+
+    async updateProfile(id: number, full_name?: string, password?: string) {
+        let password_hash;
+        if (password) {
+            password_hash = await bcrypt.hash(password, 10);
+        }
+        const updated = await this.userRepo.updateProfile(id, full_name, password_hash);
+        if (!updated) throw new AppError('User not found', 404);
+        return updated;
+    }
 }

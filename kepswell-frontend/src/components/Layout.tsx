@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import {
     Box, Drawer, List, ListItemButton, ListItemText,
     ListItemIcon, Typography, Divider, Button, AppBar,
-    Toolbar, IconButton
+    Toolbar, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from '@mui/material';
 import {
     GridView, AssignmentOutlined, PeopleOutlined,
-    Menu as MenuIcon, LogoutOutlined
+    Menu as MenuIcon, LogoutOutlined, EditOutlined
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { WebClient } from '../api/WebClient';
 
 const DRAWER_WIDTH = 224;
 
@@ -24,6 +26,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const navigate         = useNavigate();
     const location         = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editPassword, setEditPassword] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
+    const { showNotification } = useNotification();
+    const webClient = new WebClient(navigate, showNotification, undefined, () => {});
 
     const isActive = (path: string) =>
         path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
@@ -92,6 +100,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Typography>
                 <Button
                     fullWidth size="small" variant="text"
+                    startIcon={<EditOutlined sx={{ fontSize: 15 }} />}
+                    onClick={() => {
+                        setEditName(user?.full_name || '');
+                        setEditPassword('');
+                        setEditOpen(true);
+                        setMobileOpen(false);
+                    }}
+                    sx={{
+                        justifyContent: 'flex-start', color: '#3b82f6', px: 1, mb: 0.5,
+                        '&:hover': { bgcolor: '#eff6ff' },
+                    }}
+                >
+                    Edit Profil
+                </Button>
+                <Button
+                    fullWidth size="small" variant="text"
                     startIcon={<LogoutOutlined sx={{ fontSize: 15 }} />}
                     onClick={() => { logout(); navigate('/login'); }}
                     sx={{
@@ -151,6 +175,49 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Box>
                 {children}
             </Box>
+
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Edit Profil</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField
+                            label="Nama Lengkap"
+                            fullWidth
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                        />
+                        <TextField
+                            label="Password Baru (Opsional)"
+                            type="password"
+                            fullWidth
+                            value={editPassword}
+                            onChange={(e) => setEditPassword(e.target.value)}
+                            helperText="Kosongkan jika tidak ingin mengubah password"
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditOpen(false)} sx={{ color: '#6b7280' }}>Batal</Button>
+                    <Button 
+                        variant="contained" 
+                        disabled={isUpdating || !editName.trim()}
+                        onClick={async () => {
+                            try {
+                                setIsUpdating(true);
+                                await webClient.handleUpdateProfile(editName, editPassword || undefined);
+                                setEditOpen(false);
+                                window.location.reload(); // Reload to refresh user context
+                            } catch (error) {
+                                // Error is handled by WebClient
+                            } finally {
+                                setIsUpdating(false);
+                            }
+                        }}
+                    >
+                        Simpan
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
