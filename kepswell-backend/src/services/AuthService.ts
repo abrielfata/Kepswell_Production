@@ -69,11 +69,14 @@ export class AuthService {
         return updated;
     }
 
-    async getAllAdmins() {
+    async getManagers() {
         return await this.userRepo.findAll();
     }
 
-    async createAdmin(email: string, full_name: string, password?: string, role: string = 'MANAGER') {
+    async createManager(email: string, full_name: string, password?: string, role: string = 'MANAGER') {
+        if (role === 'OWNER') {
+            throw new AppError('Cannot create Owner account via this API', 400);
+        }
         const existing = await this.userRepo.findByEmail(email);
         if (existing) {
             throw new AppError('Email already exists', 400);
@@ -83,7 +86,11 @@ export class AuthService {
         return await this.userRepo.create(email, full_name, password_hash, role);
     }
 
-    async deleteAdmin(id: number) {
+    async deleteManager(id: number) {
+        const user = await this.userRepo.findById(id);
+        if (user?.role === 'OWNER') {
+            throw new AppError('Cannot delete the Owner account', 400);
+        }
         return await this.userRepo.delete(id);
     }
 }

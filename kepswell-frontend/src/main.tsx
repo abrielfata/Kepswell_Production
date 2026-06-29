@@ -10,7 +10,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ReportsPage from './pages/ReportsPage';
 import HostsPage from './pages/HostsPage';
-import AdminsPage from './pages/AdminsPage';
+import ManagersPage from './pages/ManagersPage';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -142,7 +142,7 @@ function AppRoutes() {
             <Route path="/"        element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
             <Route path="/hosts"   element={<ProtectedRoute><HostsPage /></ProtectedRoute>} />
-            <Route path="/admins"  element={<ProtectedRoute><AdminsPage /></ProtectedRoute>} />
+            <Route path="/managers"  element={<ProtectedRoute><ManagersPage /></ProtectedRoute>} />
             <Route path="*"        element={<Navigate to="/" replace />} />
         </Routes>
     );

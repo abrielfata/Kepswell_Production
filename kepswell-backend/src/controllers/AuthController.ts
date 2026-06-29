@@ -32,29 +32,29 @@ export class AuthController {
         }
     };
 
-    getAllAdmins = async (req: Request, res: Response, next: NextFunction) => {
+    getManagers = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const admins = await this.authService.getAllAdmins();
-            return res.status(200).json({ success: true, data: admins });
+            const managers = await this.authService.getManagers();
+            return res.status(200).json({ success: true, data: managers });
         } catch (err) {
             next(err);
         }
     };
 
-    createAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    createManager = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email, full_name, password, role } = req.body;
-            const newAdmin = await this.authService.createAdmin(email, full_name, password, role);
-            return res.status(201).json({ success: true, data: newAdmin });
+            const newManager = await this.authService.createManager(email, full_name, password, role);
+            return res.status(201).json({ success: true, data: newManager });
         } catch (err) {
             next(err);
         }
     };
 
-    deleteAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    deleteManager = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            await this.authService.deleteAdmin(Number(req.params.id));
-            return res.status(200).json({ success: true, message: 'Admin deleted' });
+            await this.authService.deleteManager(Number(req.params.id));
+            return res.status(200).json({ success: true, message: 'Manager deleted' });
         } catch (err) {
             next(err);
         }

@@ -22,7 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
         { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
         { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
-        ...(user?.role === 'OWNER' ? [{ label: 'Manajemen Admin', path: '/admins', icon: <PeopleOutlined sx={{ fontSize: 18 }} /> }] : [])
+        ...(user?.role === 'OWNER' ? [{ label: 'Manajemen Manager', path: '/managers', icon: <PeopleOutlined sx={{ fontSize: 18 }} /> }] : [])
     ];
 
     const navigate         = useNavigate();
