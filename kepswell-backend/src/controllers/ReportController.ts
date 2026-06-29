@@ -39,13 +39,8 @@ export class ReportController {
         try {
             const { status, notes } = req.body;
             const verified_by = req.user?.id;
-            let verifier_name = undefined;
-            if (verified_by) {
-                const user = await this.authService.getMe(verified_by);
-                verifier_name = user?.full_name;
-            }
             const report = await this.reportService.verifyReportData(
-                Number(req.params.id), status, notes, verified_by, verifier_name
+                Number(req.params.id), status, notes, verified_by
             );
             res.status(200).json({ success: true, data: report });
         } catch (err) {

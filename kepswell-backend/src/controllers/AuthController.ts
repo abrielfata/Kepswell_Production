@@ -31,4 +31,32 @@ export class AuthController {
             next(err);
         }
     };
+
+    getAllAdmins = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const admins = await this.authService.getAllAdmins();
+            return res.status(200).json({ success: true, data: admins });
+        } catch (err) {
+            next(err);
+        }
+    };
+
+    createAdmin = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, full_name, password, role } = req.body;
+            const newAdmin = await this.authService.createAdmin(email, full_name, password, role);
+            return res.status(201).json({ success: true, data: newAdmin });
+        } catch (err) {
+            next(err);
+        }
+    };
+
+    deleteAdmin = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            await this.authService.deleteAdmin(Number(req.params.id));
+            return res.status(200).json({ success: true, message: 'Admin deleted' });
+        } catch (err) {
+            next(err);
+        }
+    };
 }

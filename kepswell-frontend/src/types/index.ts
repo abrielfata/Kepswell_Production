@@ -2,7 +2,8 @@ export interface User {
     id: number;
     email: string;
     full_name: string;
-    role: 'MANAGER';
+    role: 'MANAGER' | 'OWNER';
+    is_active: boolean;
 }
 
 export interface Host {
