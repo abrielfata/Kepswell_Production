@@ -36,8 +36,9 @@ export class ReportController {
     verify = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { status, notes } = req.body;
+            const verified_by = req.user?.id;
             const report = await this.reportService.verifyReportData(
-                Number(req.params.id), status, notes
+                Number(req.params.id), status, notes, verified_by
             );
             res.status(200).json({ success: true, data: report });
         } catch (err) {

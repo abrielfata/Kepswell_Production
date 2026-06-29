@@ -107,6 +107,11 @@ export default function ReportsPage() {
                                         <TableCell>
                                             <Chip label={STATUS_LABEL[r.status] ?? r.status} size="small"
                                                 color={STATUS_COLOR[r.status] ?? 'default'} />
+                                            {r.verifier_name && (
+                                                <Typography sx={{ fontSize: '0.65rem', color: '#6b7280', mt: 0.5, display: 'block' }}>
+                                                    Oleh: {r.verifier_name.split(' ')[0]}
+                                                </Typography>
+                                            )}
                                         </TableCell>
                                         <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
                                         <TableCell>

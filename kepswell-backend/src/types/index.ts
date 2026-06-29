@@ -35,6 +35,8 @@ export interface Report {
     month: number;
     year: number;
     notes: string | null;
+    verified_by?: number | null;
+    verifier_name?: string | null;
     created_at: Date;
     updated_at: Date;
 }

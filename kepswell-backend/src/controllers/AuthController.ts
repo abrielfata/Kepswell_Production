@@ -22,4 +22,13 @@ export class AuthController {
             next(err);
         }
     };
+    updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { full_name, password } = req.body;
+            const updated = await this.authService.updateProfile(req.user!.id, full_name, password);
+            return res.status(200).json({ success: true, data: updated });
+        } catch (err) {
+            next(err);
+        }
+    };
 }

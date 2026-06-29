@@ -1,5 +1,6 @@
 import { loginSchema, hostSchema } from '../utils/validations';
 import { reportsAPI } from './reports';
+import { authAPI } from './auth';
 
 export class WebClient {
     private navigate: (path: string) => void;
@@ -146,6 +147,16 @@ export class WebClient {
             resetCreateForm();
         } catch (err: any) {
             this.handleCreateError(err);
+        }
+    }
+    public async handleUpdateProfile(fullName?: string, password?: string) {
+        try {
+            const res = await authAPI.updateProfile(fullName, password);
+            this.showNotification("Profil berhasil diupdate", "success");
+            return res.data;
+        } catch (err: any) {
+            this.handleError(err.response?.data?.message || err.message || "Gagal mengupdate profil");
+            throw err;
         }
     }
 }
