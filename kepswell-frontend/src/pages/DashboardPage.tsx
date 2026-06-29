@@ -196,23 +196,33 @@ export default function DashboardPage() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {ranking.map((h: any) => (
-                                        <TableRow key={h.host_id}>
-                                            <TableCell>
-                                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: h.rank <= 3 ? '#2563EB' : '#374151' }}>
-                                                    #{h.rank}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell sx={{ fontWeight: 500 }}>{h.host_name}</TableCell>
-                                            <TableCell align="right">{formatCurrency(h.total_gmv)}</TableCell>
-                                            <TableCell align="right">{h.approved_reports}</TableCell>
-                                            <TableCell align="right">{formatDuration(h.total_duration_minutes)}</TableCell>
-                                            <TableCell align="right">{formatCurrency(h.gmv_per_hour)}/j</TableCell>
-                                            <TableCell align="right">
-                                                <Chip label={(h.final_score * 100).toFixed(0)} size="small" />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {rankLoading ? (
+                                        Array(5).fill(0).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array(7).fill(0).map((__, j) => (
+                                                    <TableCell key={j}><Skeleton animation="wave" height={24} /></TableCell>
+                                                ))}
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        ranking.map((h: any) => (
+                                            <TableRow key={h.host_id}>
+                                                <TableCell>
+                                                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: h.rank <= 3 ? '#2563EB' : '#374151' }}>
+                                                        #{h.rank}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell sx={{ fontWeight: 500 }}>{h.host_name}</TableCell>
+                                                <TableCell align="right">{formatCurrency(h.total_gmv)}</TableCell>
+                                                <TableCell align="right">{h.approved_reports}</TableCell>
+                                                <TableCell align="right">{formatDuration(h.total_duration_minutes)}</TableCell>
+                                                <TableCell align="right">{formatCurrency(h.gmv_per_hour)}/j</TableCell>
+                                                <TableCell align="right">
+                                                    <Chip label={(h.final_score * 100).toFixed(0)} size="small" />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </TableContainer>
