@@ -17,4 +17,11 @@ export class UserRepository {
         );
         return result.rows[0] || null;
     }
+
+    async updatePassword(id: number, newHash: string): Promise<void> {
+        await query(
+            'UPDATE users SET password_hash = $1 WHERE id = $2',
+            [newHash, id]
+        );
+    }
 }

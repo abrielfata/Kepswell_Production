@@ -22,4 +22,14 @@ export class AuthController {
             next(err);
         }
     };
+
+    changePassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { old_password, new_password } = req.body;
+            await this.authService.changePassword(req.user!.id, old_password, new_password);
+            return res.status(200).json({ success: true, message: 'Password berhasil diubah' });
+        } catch (err) {
+            next(err);
+        }
+    };
 }
