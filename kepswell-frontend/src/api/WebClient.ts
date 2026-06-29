@@ -160,34 +160,34 @@ export class WebClient {
         }
     }
 
-    public async handleFetchAdmins() {
+    public async handleFetchManagers() {
         try {
-            const res = await authAPI.getAdmins();
+            const res = await authAPI.getManagers();
             return res.data.data;
         } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal mengambil daftar admin");
+            this.handleError(err.response?.data?.message || err.message || "Gagal mengambil daftar manager");
             return [];
         }
     }
 
-    public async handleCreateAdmin(data: { email: string; full_name: string; password?: string; role: string }) {
+    public async handleCreateManager(data: { email: string; full_name: string; password?: string; role: string }) {
         try {
-            const res = await authAPI.createAdmin(data);
-            this.showNotification("Admin berhasil ditambahkan", "success");
+            const res = await authAPI.createManager(data);
+            this.showNotification("Manager berhasil ditambahkan", "success");
             return res.data;
         } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal menambah admin");
+            this.handleError(err.response?.data?.message || err.message || "Gagal menambah manager");
             throw err;
         }
     }
 
-    public async handleDeleteAdmin(id: number) {
+    public async handleDeleteManager(id: number) {
         try {
-            const res = await authAPI.deleteAdmin(id);
-            this.showNotification("Admin berhasil dihapus", "success");
+            const res = await authAPI.deleteManager(id);
+            this.showNotification("Manager berhasil dihapus", "success");
             return res.data;
         } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal menghapus admin");
+            this.handleError(err.response?.data?.message || err.message || "Gagal menghapus manager");
             throw err;
         }
     }

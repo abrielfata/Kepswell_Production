@@ -9,9 +9,9 @@ router.post('/login', ctrl.login);
 router.get('/me', authenticate, ctrl.getMe);
 router.put('/profile', authenticate, ctrl.updateProfile);
 
-// Admin Management (Owner only)
-router.get('/admins', authenticate, authorizeOwner, ctrl.getAllAdmins);
-router.post('/admins', authenticate, authorizeOwner, ctrl.createAdmin);
-router.delete('/admins/:id', authenticate, authorizeOwner, ctrl.deleteAdmin);
+// Manager Management Routes (Owner Only)
+router.get('/managers', authenticate, authorizeOwner, ctrl.getManagers);
+router.post('/managers', authenticate, authorizeOwner, ctrl.createManager);
+router.delete('/managers/:id', authenticate, authorizeOwner, ctrl.deleteManager);
 
 export default router;

@@ -3,7 +3,7 @@ export interface User {
     email: string;
     password_hash: string;
     full_name: string;
-    role: 'MANAGER';
+    role: 'MANAGER' | 'OWNER';
     is_active: boolean;
     created_at: Date;
     updated_at: Date;
