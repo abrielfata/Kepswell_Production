@@ -149,36 +149,4 @@ export class WebClient {
             this.handleCreateError(err);
         }
     }
-
-    public async handleFetchAdmins() {
-        try {
-            const res = await api.get('/auth/admins');
-            return res.data.data || [];
-        } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal mengambil data admin");
-            return [];
-        }
-    }
-
-    public async handleCreateAdmin(data: any) {
-        try {
-            const res = await api.post('/auth/admins', data);
-            this.showNotification("Admin berhasil ditambahkan", "success");
-            return res.data;
-        } catch (err: any) {
-            this.setError(err.response?.data?.message || err.message || "Gagal menambah admin");
-            throw err;
-        }
-    }
-
-    public async handleDeleteAdmin(id: number) {
-        try {
-            const res = await api.delete(`/auth/admins/${id}`);
-            this.showNotification("Admin berhasil dihapus", "success");
-            return res.data;
-        } catch (err: any) {
-            this.setError(err.response?.data?.message || err.message || "Gagal menghapus admin");
-            throw err;
-        }
-    }
 }
