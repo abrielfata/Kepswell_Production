@@ -3,7 +3,7 @@ export interface User {
     email: string;
     password_hash: string;
     full_name: string;
-    role: 'MANAGER' | 'OWNER';
+    role: 'MANAGER';
     is_active: boolean;
     created_at: Date;
     updated_at: Date;
@@ -35,8 +35,8 @@ export interface Report {
     month: number;
     year: number;
     notes: string | null;
-    verified_by?: number | null;
-    verifier_name?: string | null;
+    verified_by: number | null;
+    verified_by_name?: string | null;
     created_at: Date;
     updated_at: Date;
 }

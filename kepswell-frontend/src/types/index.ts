@@ -2,8 +2,7 @@ export interface User {
     id: number;
     email: string;
     full_name: string;
-    role: 'MANAGER' | 'OWNER';
-    is_active: boolean;
+    role: 'MANAGER';
 }
 
 export interface Host {
@@ -31,8 +30,6 @@ export interface Report {
     month: number;
     year: number;
     notes: string | null;
-    verified_by?: number | null;
-    verifier_name?: string | null;
     created_at: string;
 }
 

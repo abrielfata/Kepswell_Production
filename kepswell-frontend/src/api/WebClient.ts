@@ -1,6 +1,5 @@
 import { loginSchema, hostSchema } from '../utils/validations';
 import { reportsAPI } from './reports';
-import { authAPI } from './auth';
 
 export class WebClient {
     private navigate: (path: string) => void;
@@ -147,48 +146,6 @@ export class WebClient {
             resetCreateForm();
         } catch (err: any) {
             this.handleCreateError(err);
-        }
-    }
-    public async handleUpdateProfile(fullName?: string, password?: string) {
-        try {
-            const res = await authAPI.updateProfile(fullName, password);
-            this.showNotification("Profil berhasil diupdate", "success");
-            return res.data;
-        } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal mengupdate profil");
-            throw err;
-        }
-    }
-
-    public async handleFetchManagers() {
-        try {
-            const res = await authAPI.getManagers();
-            return res.data.data;
-        } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal mengambil daftar manager");
-            return [];
-        }
-    }
-
-    public async handleCreateManager(data: { email: string; full_name: string; password?: string; role: string }) {
-        try {
-            const res = await authAPI.createManager(data);
-            this.showNotification("Manager berhasil ditambahkan", "success");
-            return res.data;
-        } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal menambah manager");
-            throw err;
-        }
-    }
-
-    public async handleDeleteManager(id: number) {
-        try {
-            const res = await authAPI.deleteManager(id);
-            this.showNotification("Manager berhasil dihapus", "success");
-            return res.data;
-        } catch (err: any) {
-            this.handleError(err.response?.data?.message || err.message || "Gagal menghapus manager");
-            throw err;
         }
     }
 }

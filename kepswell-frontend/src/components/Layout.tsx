@@ -2,42 +2,28 @@ import React, { useState } from 'react';
 import {
     Box, Drawer, List, ListItemButton, ListItemText,
     ListItemIcon, Typography, Divider, Button, AppBar,
-    Toolbar, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField
+    Toolbar, IconButton
 } from '@mui/material';
 import {
     GridView, AssignmentOutlined, PeopleOutlined,
-    Menu as MenuIcon, LogoutOutlined, EditOutlined
+    Menu as MenuIcon, LogoutOutlined
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../contexts/NotificationContext';
-import { WebClient } from '../api/WebClient';
 
 const DRAWER_WIDTH = 224;
 
+const navItems = [
+    { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
+    { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
+    { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
+];
+
 export default function Layout({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
-    
-    const navItems = user?.role === 'OWNER'
-        ? [
-            { label: 'Statistik',         path: '/',         icon: <GridView sx={{ fontSize: 18 }} /> },
-            { label: 'Manajemen Manager', path: '/managers', icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
-          ]
-        : [
-            { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
-            { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
-            { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
-          ];
-
     const navigate         = useNavigate();
     const location         = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [editOpen, setEditOpen] = useState(false);
-    const [editName, setEditName] = useState('');
-    const [editPassword, setEditPassword] = useState('');
-    const [isUpdating, setIsUpdating] = useState(false);
-    const { showNotification } = useNotification();
-    const webClient = new WebClient(navigate, showNotification, undefined, () => {});
 
     const isActive = (path: string) =>
         path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
@@ -102,26 +88,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {user?.full_name}
                 </Typography>
                 <Typography sx={{ fontSize: '0.7rem', color: '#9ca3af', mb: 1.5 }}>
-                    {user?.role === 'OWNER' ? 'Owner' : 'Manager'}
+                    Manager
                 </Typography>
-                {user?.role !== 'OWNER' && (
-                    <Button
-                        fullWidth size="small" variant="text"
-                        startIcon={<EditOutlined sx={{ fontSize: 15 }} />}
-                        onClick={() => {
-                            setEditName(user?.full_name || '');
-                            setEditPassword('');
-                            setEditOpen(true);
-                            setMobileOpen(false);
-                        }}
-                        sx={{
-                            justifyContent: 'flex-start', color: '#3b82f6', px: 1, mb: 0.5,
-                            '&:hover': { bgcolor: '#eff6ff' },
-                        }}
-                    >
-                        Edit Profil
-                    </Button>
-                )}
                 <Button
                     fullWidth size="small" variant="text"
                     startIcon={<LogoutOutlined sx={{ fontSize: 15 }} />}
@@ -183,49 +151,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Box>
                 {children}
             </Box>
-
-            <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>Edit Profil</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                            label="Nama Lengkap"
-                            fullWidth
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                        />
-                        <TextField
-                            label="Password Baru (Opsional)"
-                            type="password"
-                            fullWidth
-                            value={editPassword}
-                            onChange={(e) => setEditPassword(e.target.value)}
-                            helperText="Kosongkan jika tidak ingin mengubah password"
-                        />
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setEditOpen(false)} sx={{ color: '#6b7280' }}>Batal</Button>
-                    <Button 
-                        variant="contained" 
-                        disabled={isUpdating || !editName.trim()}
-                        onClick={async () => {
-                            try {
-                                setIsUpdating(true);
-                                await webClient.handleUpdateProfile(editName, editPassword || undefined);
-                                setEditOpen(false);
-                                window.location.reload(); // Reload to refresh user context
-                            } catch (error) {
-                                // Error is handled by WebClient
-                            } finally {
-                                setIsUpdating(false);
-                            }
-                        }}
-                    >
-                        Simpan
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 }
