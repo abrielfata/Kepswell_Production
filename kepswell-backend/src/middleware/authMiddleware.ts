@@ -22,8 +22,16 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 };
 
 export const authorizeManager = (req: Request, res: Response, next: NextFunction) => {
-    if (req.user?.role !== 'MANAGER') {
+    if (req.user?.role !== 'MANAGER' && req.user?.role !== 'OWNER') {
         res.status(403).json({ success: false, message: 'Access denied' });
+        return;
+    }
+    next();
+};
+
+export const authorizeOwner = (req: Request, res: Response, next: NextFunction) => {
+    if (req.user?.role !== 'OWNER') {
+        res.status(403).json({ success: false, message: 'Access denied, Owner only' });
         return;
     }
     next();

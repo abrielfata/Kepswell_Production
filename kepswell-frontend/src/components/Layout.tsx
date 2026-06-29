@@ -15,14 +15,16 @@ import { WebClient } from '../api/WebClient';
 
 const DRAWER_WIDTH = 224;
 
-const navItems = [
-    { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
-    { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
-    { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
-];
-
 export default function Layout({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
+    
+    const navItems = [
+        { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
+        { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
+        { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
+        ...(user?.role === 'OWNER' ? [{ label: 'Manajemen Admin', path: '/admins', icon: <PeopleOutlined sx={{ fontSize: 18 }} /> }] : [])
+    ];
+
     const navigate         = useNavigate();
     const location         = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,7 +98,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {user?.full_name}
                 </Typography>
                 <Typography sx={{ fontSize: '0.7rem', color: '#9ca3af', mb: 1.5 }}>
-                    Manager
+                    {user?.role === 'OWNER' ? 'Owner' : 'Manager'}
                 </Typography>
                 <Button
                     fullWidth size="small" variant="text"

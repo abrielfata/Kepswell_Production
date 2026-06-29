@@ -159,4 +159,36 @@ export class WebClient {
             throw err;
         }
     }
+
+    public async handleFetchAdmins() {
+        try {
+            const res = await authAPI.getAdmins();
+            return res.data.data;
+        } catch (err: any) {
+            this.handleError(err.response?.data?.message || err.message || "Gagal mengambil daftar admin");
+            return [];
+        }
+    }
+
+    public async handleCreateAdmin(data: { email: string; full_name: string; password?: string; role: string }) {
+        try {
+            const res = await authAPI.createAdmin(data);
+            this.showNotification("Admin berhasil ditambahkan", "success");
+            return res.data;
+        } catch (err: any) {
+            this.handleError(err.response?.data?.message || err.message || "Gagal menambah admin");
+            throw err;
+        }
+    }
+
+    public async handleDeleteAdmin(id: number) {
+        try {
+            const res = await authAPI.deleteAdmin(id);
+            this.showNotification("Admin berhasil dihapus", "success");
+            return res.data;
+        } catch (err: any) {
+            this.handleError(err.response?.data?.message || err.message || "Gagal menghapus admin");
+            throw err;
+        }
+    }
 }

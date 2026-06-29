@@ -68,4 +68,22 @@ export class AuthService {
         if (!updated) throw new AppError('User not found', 404);
         return updated;
     }
+
+    async getAllAdmins() {
+        return await this.userRepo.findAll();
+    }
+
+    async createAdmin(email: string, full_name: string, password?: string, role: string = 'MANAGER') {
+        const existing = await this.userRepo.findByEmail(email);
+        if (existing) {
+            throw new AppError('Email already exists', 400);
+        }
+        const pwd = password || 'password123';
+        const password_hash = await bcrypt.hash(pwd, 10);
+        return await this.userRepo.create(email, full_name, password_hash, role);
+    }
+
+    async deleteAdmin(id: number) {
+        return await this.userRepo.delete(id);
+    }
 }
