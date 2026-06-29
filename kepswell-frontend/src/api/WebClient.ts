@@ -1,6 +1,5 @@
 import { loginSchema, hostSchema } from '../utils/validations';
 import { reportsAPI } from './reports';
-import api from './axios';
 
 export class WebClient {
     private navigate: (path: string) => void;
