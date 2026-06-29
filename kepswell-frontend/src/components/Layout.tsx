@@ -18,12 +18,16 @@ const DRAWER_WIDTH = 224;
 export default function Layout({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
     
-    const navItems = [
-        { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
-        { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
-        { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
-        ...(user?.role === 'OWNER' ? [{ label: 'Manajemen Manager', path: '/managers', icon: <PeopleOutlined sx={{ fontSize: 18 }} /> }] : [])
-    ];
+    const navItems = user?.role === 'OWNER'
+        ? [
+            { label: 'Statistik',         path: '/',         icon: <GridView sx={{ fontSize: 18 }} /> },
+            { label: 'Manajemen Manager', path: '/managers', icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
+          ]
+        : [
+            { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
+            { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
+            { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
+          ];
 
     const navigate         = useNavigate();
     const location         = useLocation();
@@ -100,22 +104,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Typography sx={{ fontSize: '0.7rem', color: '#9ca3af', mb: 1.5 }}>
                     {user?.role === 'OWNER' ? 'Owner' : 'Manager'}
                 </Typography>
-                <Button
-                    fullWidth size="small" variant="text"
-                    startIcon={<EditOutlined sx={{ fontSize: 15 }} />}
-                    onClick={() => {
-                        setEditName(user?.full_name || '');
-                        setEditPassword('');
-                        setEditOpen(true);
-                        setMobileOpen(false);
-                    }}
-                    sx={{
-                        justifyContent: 'flex-start', color: '#3b82f6', px: 1, mb: 0.5,
-                        '&:hover': { bgcolor: '#eff6ff' },
-                    }}
-                >
-                    Edit Profil
-                </Button>
+                {user?.role !== 'OWNER' && (
+                    <Button
+                        fullWidth size="small" variant="text"
+                        startIcon={<EditOutlined sx={{ fontSize: 15 }} />}
+                        onClick={() => {
+                            setEditName(user?.full_name || '');
+                            setEditPassword('');
+                            setEditOpen(true);
+                            setMobileOpen(false);
+                        }}
+                        sx={{
+                            justifyContent: 'flex-start', color: '#3b82f6', px: 1, mb: 0.5,
+                            '&:hover': { bgcolor: '#eff6ff' },
+                        }}
+                    >
+                        Edit Profil
+                    </Button>
+                )}
                 <Button
                     fullWidth size="small" variant="text"
                     startIcon={<LogoutOutlined sx={{ fontSize: 15 }} />}

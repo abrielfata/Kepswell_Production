@@ -133,17 +133,35 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Layout>{children}</Layout>;
 }
 
+// Route khusus Manager — Owner akan diarahkan ke /
+function ManagerRoute({ children }: { children: React.ReactNode }) {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (!user) return <Navigate to="/login" replace />;
+    if (user.role === 'OWNER') return <Navigate to="/" replace />;
+    return <Layout>{children}</Layout>;
+}
+
+// Route khusus Owner — Manager akan diarahkan ke /
+function OwnerRoute({ children }: { children: React.ReactNode }) {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (!user) return <Navigate to="/login" replace />;
+    if (user.role !== 'OWNER') return <Navigate to="/" replace />;
+    return <Layout>{children}</Layout>;
+}
+
 function AppRoutes() {
     const { user, loading } = useAuth();
     if (loading) return null;
     return (
         <Routes>
-            <Route path="/login"   element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-            <Route path="/"        element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-            <Route path="/hosts"   element={<ProtectedRoute><HostsPage /></ProtectedRoute>} />
-            <Route path="/managers"  element={<ProtectedRoute><ManagersPage /></ProtectedRoute>} />
-            <Route path="*"        element={<Navigate to="/" replace />} />
+            <Route path="/login"    element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+            <Route path="/"         element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/reports"  element={<ManagerRoute><ReportsPage /></ManagerRoute>} />
+            <Route path="/hosts"    element={<ManagerRoute><HostsPage /></ManagerRoute>} />
+            <Route path="/managers" element={<OwnerRoute><ManagersPage /></OwnerRoute>} />
+            <Route path="*"         element={<Navigate to="/" replace />} />
         </Routes>
     );
 }
