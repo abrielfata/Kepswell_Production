@@ -7,5 +7,6 @@ const ctrl = new AuthController();
 
 router.post('/login', ctrl.login);
 router.get('/me', authenticate, ctrl.getMe);
+router.put('/change-password', authenticate, ctrl.changePassword);
 
 export default router;
