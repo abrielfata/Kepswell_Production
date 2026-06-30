@@ -25,7 +25,6 @@ export interface Host {
 export interface Report {
     id: number;
     host_id: number;
-    platform: 'TIKTOK' | 'SHOPEE';
     reported_gmv: number;
     reported_pesanan_sku: number;
     live_duration_minutes: number;
@@ -34,9 +33,8 @@ export interface Report {
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     month: number;
     year: number;
-    notes: string | null;
-    verified_by: number | null;
-    verified_by_name?: string | null;
+    user_id: number | null;
+    user_name?: string | null;
     created_at: Date;
     updated_at: Date;
 }

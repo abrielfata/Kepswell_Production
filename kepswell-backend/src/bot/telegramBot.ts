@@ -15,8 +15,6 @@ export interface NotifyStatusParams {
     gmv: number;
     pesanan_sku: number;
     duration: number;
-    platform: string;
-    notes?: string;
 }
 
 
@@ -109,7 +107,6 @@ export class TelegramBot {
                 `GMV      : ${gmvFormatted}\n` +
                 `Pesanan  : ${params.pesanan_sku} SKU\n` +
                 `Durasi   : ${durasiText}\n` +
-                (params.notes ? `\nCatatan  : ${params.notes}` : '') +
                 `\n\nTerima kasih! Data Anda telah dicatat. 🎉`
             );
         } else {
@@ -119,7 +116,6 @@ export class TelegramBot {
                 `GMV      : ${gmvFormatted}\n` +
                 `Pesanan  : ${params.pesanan_sku} SKU\n` +
                 `Durasi   : ${durasiText}\n` +
-                (params.notes ? `\nAlasan   : ${params.notes}` : '') +
                 `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`
             );
         }
@@ -182,7 +178,6 @@ export class TelegramBot {
             const now = new Date();
             await this.reportService.recordNewReport({
                 host_id: pending.host_id,
-                platform: pending.platform,
                 reported_gmv: pending.gmv,
                 reported_pesanan_sku: pending.pesanan_sku,
                 live_duration_minutes: pending.duration,
@@ -261,7 +256,6 @@ export class TelegramBot {
 
         this.pendingReports.set(telegramChatId, {
             host_id: host.id,
-            platform: ocr.platform,
             gmv: ocr.parsedGMV,
             pesanan_sku: ocr.parsedPesananSKU,
             duration: ocr.parsedDurationMinutes,

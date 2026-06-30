@@ -119,7 +119,7 @@ export default function ReportsPage() {
                                                     color={STATUS_COLOR[r.status] ?? 'default'} />
                                             </TableCell>
                                             <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                                                {r.verified_by_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
+                                                {r.user_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
                                             </TableCell>
                                             <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
                                             <TableCell>

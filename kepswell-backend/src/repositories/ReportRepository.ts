@@ -7,7 +7,6 @@ export class ReportRepository {
         month?: number;
         year?: number;
         host_id?: number;
-        platform?: string;
         page?: number;
         limit?: number;
     }): Promise<{ reports: any[]; total: number }> {
@@ -31,10 +30,6 @@ export class ReportRepository {
             conditions.push(`r.host_id = $${idx++}`);
             params.push(filters.host_id);
         }
-        if (filters.platform) {
-            conditions.push(`r.platform = $${idx++}`);
-            params.push(filters.platform);
-        }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
         const page  = filters.page  || 1;
@@ -49,10 +44,10 @@ export class ReportRepository {
 
         const dataResult = await query(
             `SELECT r.*, h.full_name as host_name,
-                    u.full_name as verified_by_name
+                    u.full_name as user_name
              FROM reports r
              JOIN hosts h ON r.host_id = h.id
-             LEFT JOIN users u ON r.verified_by = u.id
+             LEFT JOIN users u ON r.user_id = u.id
              ${where}
              ORDER BY r.created_at DESC
              LIMIT $${idx++} OFFSET $${idx++}`,
@@ -65,10 +60,10 @@ export class ReportRepository {
     async findById(id: number): Promise<any | null> {
         const result = await query(
             `SELECT r.*, h.full_name as host_name,
-                    u.full_name as verified_by_name
+                    u.full_name as user_name
              FROM reports r
              JOIN hosts h ON r.host_id = h.id
-             LEFT JOIN users u ON r.verified_by = u.id
+             LEFT JOIN users u ON r.user_id = u.id
              WHERE r.id = $1`,
             [id]
         );
@@ -77,7 +72,6 @@ export class ReportRepository {
 
     async insertReportRecord(data: {
         host_id: number;
-        platform: string;
         reported_gmv: number;
         reported_pesanan_sku: number;
         live_duration_minutes: number;
@@ -88,12 +82,12 @@ export class ReportRepository {
     }): Promise<Report> {
         const result = await query(
             `INSERT INTO reports (
-                host_id, platform, reported_gmv, reported_pesanan_sku, live_duration_minutes,
+                host_id, reported_gmv, reported_pesanan_sku, live_duration_minutes,
                 screenshot_url, ocr_raw_text, month, year
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
              RETURNING *`,
             [
-                data.host_id, data.platform, data.reported_gmv, data.reported_pesanan_sku,
+                data.host_id, data.reported_gmv, data.reported_pesanan_sku,
                 data.live_duration_minutes, data.screenshot_url || null,
                 data.ocr_raw_text || null, data.month, data.year
             ]
@@ -101,13 +95,13 @@ export class ReportRepository {
         return result.rows[0];
     }
 
-    async updateStatus(id: number, status: string, notes?: string, verifiedBy?: number): Promise<Report | null> {
+    async updateStatus(id: number, status: string, userId?: number): Promise<Report | null> {
         const result = await query(
             `UPDATE reports
-             SET status = $1, notes = $2, verified_by = $3, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4
+             SET status = $1, user_id = $2, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $3
              RETURNING *`,
-            [status, notes || null, verifiedBy || null, id]
+            [status, userId || null, id]
         );
         return result.rows[0] || null;
     }

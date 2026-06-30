@@ -4,6 +4,4 @@ export const REPORT_STATUS = {
     REJECTED: 'REJECTED'
 } as const;
 
-export const PLATFORMS = {
-    TIKTOK: 'TIKTOK'
-} as const;
+

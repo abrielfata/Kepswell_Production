@@ -6,15 +6,14 @@ export const reportsAPI = {
         month?: number;
         year?: number;
         host_id?: number;
-        platform?: string;
         page?: number;
         limit?: number;
     }) => api.get('/reports', { params }),
 
     getById: (id: number) => api.get(`/reports/${id}`),
 
-    updateStatus: (id: number, status: string, notes?: string) =>
-        api.put(`/reports/${id}/status`, { status, notes }),
+    updateStatus: (id: number, status: string) =>
+        api.put(`/reports/${id}/status`, { status }),
 
     getAvailableMonths: () => api.get('/reports/available-months'),
 
