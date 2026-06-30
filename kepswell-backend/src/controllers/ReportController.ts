@@ -8,13 +8,12 @@ export class ReportController {
 
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { status, month, year, host_id, platform, page, limit } = req.query;
+            const { status, month, year, host_id, page, limit } = req.query;
             const result = await this.reportService.getAll({
                 status: status as string,
                 month: month ? Number(month) : undefined,
                 year: year ? Number(year) : undefined,
                 host_id: host_id ? Number(host_id) : undefined,
-                platform: platform as string,
                 page: page ? Number(page) : 1,
                 limit: limit ? Number(limit) : 10,
             });
@@ -35,10 +34,10 @@ export class ReportController {
 
     verify = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { status, notes } = req.body;
-            const verifiedBy = req.user?.id; // ID manajer yang sedang login
+            const { status } = req.body;
+            const userId = req.user?.id; // ID manajer yang sedang login
             const report = await this.reportService.verifyReportData(
-                Number(req.params.id), status, notes, verifiedBy
+                Number(req.params.id), status, userId
             );
             res.status(200).json({ success: true, data: report });
         } catch (err) {

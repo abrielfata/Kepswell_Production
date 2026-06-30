@@ -21,7 +21,6 @@ export interface Report {
     id: number;
     host_id: number;
     host_name: string;
-    platform: 'TIKTOK' | 'SHOPEE';
     reported_gmv: number;
     reported_pesanan_sku: number;
     live_duration_minutes: number;
@@ -29,7 +28,6 @@ export interface Report {
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     month: number;
     year: number;
-    notes: string | null;
     created_at: string;
 }
 

@@ -18,8 +18,8 @@ export function useReports(params: any) {
     });
 
     const { mutateAsync: updateStatus, isPending } = useMutation({
-        mutationFn: ({ id, status, notes }: { id: number; status: string; notes?: string }) =>
-            reportsAPI.updateStatus(id, status, notes),
+        mutationFn: ({ id, status }: { id: number; status: string }) =>
+            reportsAPI.updateStatus(id, status),
         onSuccess: (_data, vars) => {
             queryClient.invalidateQueries({ queryKey: ['reports'] });
             queryClient.invalidateQueries({ queryKey: ['statistics'] });

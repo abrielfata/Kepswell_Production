@@ -9,7 +9,6 @@ export interface OcrResult {
     parsedGMV: number;
     parsedDurationMinutes: number;
     parsedPesananSKU: number;
-    platform: 'TIKTOK';
     error?: string;
 }
 
@@ -84,11 +83,6 @@ export class OCRService {
         return 0;
     }
 
-    private detectPlatform(text: string): 'TIKTOK' {
-        // Fokus hanya pada TikTok Shop (sesuai spesifikasi main branch)
-        return 'TIKTOK';
-    }
-
     async extractFromImage(imagePath: string): Promise<OcrResult> {
         try {
             const form = new FormData();
@@ -117,7 +111,6 @@ export class OCRService {
                 parsedGMV:             this.parseGMV(rawText),
                 parsedDurationMinutes: this.parseDurationMinutes(rawText),
                 parsedPesananSKU:      this.parsePesananSKU(rawText),
-                platform:              this.detectPlatform(rawText),
             };
         } catch (err: any) {
             return {
@@ -126,7 +119,6 @@ export class OCRService {
                 parsedGMV:             0,
                 parsedDurationMinutes: 0,
                 parsedPesananSKU:      0,
-                platform:              'TIKTOK',
                 error:                 err.message,
             };
         }

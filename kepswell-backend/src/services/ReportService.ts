@@ -11,7 +11,6 @@ export class ReportService {
         month?: number;
         year?: number;
         host_id?: number;
-        platform?: string;
         page?: number;
         limit?: number;
     }) {
@@ -28,7 +27,7 @@ export class ReportService {
         return this.reportRepo.insertReportRecord(data);
     }
 
-    async verifyReportData(id: number, status: string, notes?: string, verifiedBy?: number) {
+    async verifyReportData(id: number, status: string, userId?: number) {
         const valid = Object.values(REPORT_STATUS) as string[];
         if (!valid.includes(status)) {
             throw new AppError('Invalid status', 400);
@@ -37,7 +36,7 @@ export class ReportService {
         const report = await this.reportRepo.findById(id);
         if (!report) throw new AppError('Report not found', 404);
 
-        const updated = await this.reportRepo.updateStatus(id, status, notes, verifiedBy);
+        const updated = await this.reportRepo.updateStatus(id, status, userId);
 
 
         if (status === REPORT_STATUS.APPROVED || status === REPORT_STATUS.REJECTED) {
@@ -48,8 +47,6 @@ export class ReportService {
                 gmv:       Number(report.reported_gmv),
                 pesanan_sku: Number(report.reported_pesanan_sku),
                 duration:  Number(report.live_duration_minutes),
-                platform:  report.platform,
-                notes,
             }).catch(err => console.error('Notifikasi gagal:', err.message));
         }
 
