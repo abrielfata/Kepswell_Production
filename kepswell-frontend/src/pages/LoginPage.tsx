@@ -11,7 +11,7 @@ export default function LoginPage() {
     const [error, setError]       = useState('');
     const [loading, setLoading]   = useState(false);
 
-    const { attemptLogin } = useAuth();
+    const { attemptLogin: login } = useAuth();
     const navigate  = useNavigate();
     const { showNotification } = useNotification();
 
@@ -19,7 +19,7 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
 
-        const webClient = new WebClient(navigate, showNotification, attemptLogin, setError);
+        const webClient = new WebClient(navigate, showNotification, login, setError);
 
         setLoading(true);
         await webClient.handleSubmit(email, password);
