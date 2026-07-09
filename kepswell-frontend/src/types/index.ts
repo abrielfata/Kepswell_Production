@@ -31,7 +31,11 @@ export interface Report {
     created_at: string;
 }
 
-export interface RankedHost {
+export interface RankedHost extends HostPerformance {
+    rank: number;
+}
+
+export interface HostPerformance {
     host_id: number;
     host_name: string;
     month: number;
@@ -39,15 +43,10 @@ export interface RankedHost {
     total_reports: number;
     approved_reports: number;
     total_gmv: number;
+    total_pesanan_sku: number;
     total_duration_minutes: number;
     avg_gmv_per_session: number;
     gmv_per_hour: number;
-    score_gmv: number;
-    score_sessions: number;
-    score_duration: number;
-    score_gmv_per_hour: number;
-    final_score: number;
-    rank: number;
 }
 
 export interface Statistics {
