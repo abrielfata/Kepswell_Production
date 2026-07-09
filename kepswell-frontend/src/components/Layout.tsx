@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
     GridView, AssignmentOutlined, PeopleOutlined,
-    Menu as MenuIcon, LogoutOutlined, LockOutlined
+    Menu as MenuIcon, LogoutOutlined
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,7 +17,6 @@ const navItems = [
     { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
     { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
     { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
-    { label: 'Ubah Password', path: '/settings/password', icon: <LockOutlined sx={{ fontSize: 18 }} /> },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
