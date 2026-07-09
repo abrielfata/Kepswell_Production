@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
     Box, Card, CardContent, Typography, Select, MenuItem,
-    FormControl, Chip, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, Paper, Skeleton
+    FormControl, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, Paper, Skeleton, Button
 } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
@@ -33,6 +34,31 @@ export default function DashboardPage() {
         if (ranking.length > 0) console.log('Rendering table with data:', ranking);
     }, [ranking]);
 
+    const handleExportDashboard = () => {
+        if (!ranking || ranking.length === 0) return;
+        
+        const headers = ['Rank', 'Host', 'Total GMV (Rp)', 'Sesi', 'Total Durasi (Menit)', 'Pesanan SKU'];
+        const csvRows = ranking.map((h: any) => [
+            h.rank,
+            `"${h.host_name}"`,
+            h.total_gmv,
+            h.approved_reports,
+            h.total_duration_minutes,
+            h.total_pesanan_sku
+        ].join(','));
+        
+        const csvString = [headers.join(','), ...csvRows].join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const period = selectedMonth ? `Bulan_${selectedMonth}` : 'Semua_Periode';
+        link.setAttribute('download', `Peringkat_Host_${period}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Box>
             {/* Page heading + filter */}
@@ -45,18 +71,30 @@ export default function DashboardPage() {
                         Ringkasan laporan dan performa host
                     </Typography>
                 </Box>
-                <FormControl sx={{ minWidth: 160 }}>
-                    <Select
-                        displayEmpty value={selectedMonth}
-                        onChange={e => setSelectedMonth(e.target.value as number)}
-                        renderValue={v => !v ? 'Semua periode' : monthsData?.find((m: any) => m.month === Number(v))?.display_name ?? String(v)}
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Button 
+                        variant="outlined" 
+                        startIcon={<DownloadIcon />} 
+                        onClick={handleExportDashboard}
+                        disabled={rankLoading || ranking.length === 0}
+                        sx={{ height: 40 }}
                     >
-                        <MenuItem value="">Semua periode</MenuItem>
-                        {monthsData?.map((m: any) => (
-                            <MenuItem key={`${m.year}-${m.month}`} value={m.month}>{m.display_name}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                        Export CSV
+                    </Button>
+                    <FormControl sx={{ minWidth: 160 }}>
+                        <Select
+                            displayEmpty value={selectedMonth}
+                            onChange={e => setSelectedMonth(e.target.value as number)}
+                            renderValue={v => !v ? 'Semua periode' : monthsData?.find((m: any) => m.month === Number(v))?.display_name ?? String(v)}
+                            sx={{ height: 40 }}
+                        >
+                            <MenuItem value="">Semua periode</MenuItem>
+                            {monthsData?.map((m: any) => (
+                                <MenuItem key={`${m.year}-${m.month}`} value={m.month}>{m.display_name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
             </Box>
 
             {/* Stat cards */}
@@ -123,7 +161,6 @@ export default function DashboardPage() {
                     <CardContent sx={{ p: 0 }}>
                         <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid #f3f4f6' }}>
                             <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Peringkat Host</Typography>
-                            <Typography sx={{ fontSize: '0.75rem', color: '#6b7280', mt: 0.25 }}>Skor gabungan terbobot</Typography>
                         </Box>
                         <TableContainer>
                             <Table size="small">
@@ -132,14 +169,13 @@ export default function DashboardPage() {
                                         <TableCell>#</TableCell>
                                         <TableCell>Nama</TableCell>
                                         <TableCell align="right">GMV</TableCell>
-                                        <TableCell align="right">Skor</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {rankLoading
                                         ? Array(5).fill(0).map((_, i) => (
                                             <TableRow key={i}>
-                                                {Array(4).fill(0).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}
+                                                {Array(3).fill(0).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}
                                             </TableRow>
                                         ))
                                         : ranking.slice(0, 8).map((h: any) => (
@@ -154,10 +190,6 @@ export default function DashboardPage() {
                                                 </TableCell>
                                                 <TableCell sx={{ fontWeight: 500 }}>{h.host_name}</TableCell>
                                                 <TableCell align="right" sx={{ color: '#6b7280' }}>{formatCurrency(h.total_gmv)}</TableCell>
-                                                <TableCell align="right">
-                                                    <Chip label={(h.final_score * 100).toFixed(0)} size="small"
-                                                        sx={{ bgcolor: h.rank === 1 ? '#eff6ff' : '#f9fafb', color: h.rank === 1 ? '#2563EB' : '#6b7280' }} />
-                                                </TableCell>
                                             </TableRow>
                                         ))
                                     }
@@ -191,15 +223,14 @@ export default function DashboardPage() {
                                         <TableCell align="right">Total GMV</TableCell>
                                         <TableCell align="right">Sesi</TableCell>
                                         <TableCell align="right">Durasi</TableCell>
-                                        <TableCell align="right">GMV/Jam</TableCell>
-                                        <TableCell align="right">Skor</TableCell>
+                                        <TableCell align="right">Pesanan SKU</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {rankLoading ? (
                                         Array(5).fill(0).map((_, i) => (
                                             <TableRow key={i}>
-                                                {Array(7).fill(0).map((__, j) => (
+                                                {Array(6).fill(0).map((__, j) => (
                                                     <TableCell key={j}><Skeleton animation="wave" height={24} /></TableCell>
                                                 ))}
                                             </TableRow>
@@ -216,10 +247,7 @@ export default function DashboardPage() {
                                                 <TableCell align="right">{formatCurrency(h.total_gmv)}</TableCell>
                                                 <TableCell align="right">{h.approved_reports}</TableCell>
                                                 <TableCell align="right">{formatDuration(h.total_duration_minutes)}</TableCell>
-                                                <TableCell align="right">{formatCurrency(h.gmv_per_hour)}/j</TableCell>
-                                                <TableCell align="right">
-                                                    <Chip label={(h.final_score * 100).toFixed(0)} size="small" />
-                                                </TableCell>
+                                                <TableCell align="right">{h.total_pesanan_sku}</TableCell>
                                             </TableRow>
                                         ))
                                     )}

@@ -47,6 +47,7 @@ export interface HostPerformance {
     total_reports: number;
     approved_reports: number;
     total_gmv: number;
+    total_pesanan_sku: number;
     total_duration_minutes: number;
     avg_gmv_per_session: number;
     gmv_per_hour: number;
