@@ -31,7 +31,6 @@ export default function ReportsPage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState<number | ''>('');
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
 
     const params = {
         page: page + 1, limit: rowsPerPage,
@@ -43,15 +42,6 @@ export default function ReportsPage() {
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, () => {});
-
-    const handleExport = async () => {
-        setIsExporting(true);
-        await webClient.handleExportReports({
-            ...(statusFilter ? { status: statusFilter } : {}),
-            ...(monthFilter ? { month: Number(monthFilter) } : {}),
-        });
-        setIsExporting(false);
-    };
 
     return (
         <Box>
@@ -66,20 +56,6 @@ export default function ReportsPage() {
 
                 {/* Filters & Actions */}
                 <Stack direction="row" spacing={1.5}>
-                    <Button 
-                        variant="outlined" 
-                        onClick={handleExport}
-                        disabled={isExporting || isLoading}
-                        sx={{ 
-                            textTransform: 'none', 
-                            fontSize: '0.85rem',
-                            borderColor: '#e5e7eb',
-                            color: '#374151',
-                            '&:hover': { borderColor: '#d1d5db', backgroundColor: '#f9fafb' }
-                        }}
-                    >
-                        {isExporting ? 'Mengekspor...' : 'Export CSV'}
-                    </Button>
                     <FormControl sx={{ minWidth: 120 }}>
                         <Select displayEmpty value={statusFilter}
                             onChange={e => { setStatusFilter(e.target.value); setPage(0); }}
