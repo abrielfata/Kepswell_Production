@@ -55,6 +55,27 @@ export class AuthService {
         return user;
     }
 
+    async changePassword(userId: number, oldPassword: string, newPassword: string): Promise<void> {
+        const user = await this.userRepo.findById(userId);
+        if (!user) throw new AppError('User not found', 404);
+
+        // Fetch password_hash directly (findById doesn't return it)
+        const result = await (await import('../config/db')).query(
+            'SELECT password_hash FROM users WHERE id = $1', [userId]
+        );
+        const hash = result.rows[0]?.password_hash;
+        if (!hash) throw new AppError('User not found', 404);
+
+        const isValid = await bcrypt.compare(oldPassword, hash);
+        if (!isValid) throw new AppError('Password lama tidak sesuai', 400);
+
+        if (newPassword.length < 6)
+            throw new AppError('Password baru minimal 6 karakter', 400);
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await this.userRepo.updatePassword(userId, newHash);
+    }
+
     private async verifyPassword(password: string, hash: string): Promise<boolean> {
         return await bcrypt.compare(password, hash);
     }
