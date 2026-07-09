@@ -4,18 +4,18 @@ import { reportsAPI } from './reports';
 export class WebClient {
     private navigate: (path: string) => void;
     private showNotification: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
-    private sendLoginToBackend?: (email: string, password: string) => Promise<boolean>;
+    private login?: (email: string, password: string) => Promise<boolean>;
     private setError: (msg: string) => void;
 
     constructor(
         navigate: (path: string) => void,
         showNotification: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void,
-        sendLoginToBackend: ((email: string, password: string) => Promise<boolean>) | undefined,
+        login: ((email: string, password: string) => Promise<boolean>) | undefined,
         setError: (msg: string) => void
     ) {
         this.navigate = navigate;
         this.showNotification = showNotification;
-        this.sendLoginToBackend = sendLoginToBackend;
+        this.login = login;
         this.setError = setError;
     }
 
@@ -37,7 +37,7 @@ export class WebClient {
         }
 
         try {
-            const success = this.sendLoginToBackend ? await this.sendLoginToBackend(email, password) : false;
+            const success = this.login ? await this.login(email, password) : false;
             if (success) {
                 this.showNotification("Login berhasil", "success");
                 this.navigate('/');
@@ -85,7 +85,7 @@ export class WebClient {
         this.setError(err.message || "Gagal memperbarui status laporan");
     }
 
-    public async handleVerifyReport(id: number, status: string, verifyFn: (params: {id: number, status: string}) => Promise<any>, closeDialog: () => void) {
+    public async handleVerifyReport(id: number, status: string, verifyFn: (params: { id: number, status: string }) => Promise<any>, closeDialog: () => void) {
         try {
             await verifyFn({ id, status });
             this.handleVerifySuccess();
@@ -146,6 +146,59 @@ export class WebClient {
             resetCreateForm();
         } catch (err: any) {
             this.handleCreateError(err);
+        }
+    }
+
+    private generateCSVString(data: any[]): string {
+        const headers = ['ID', 'Host', 'GMV (Rp)', 'Pesanan SKU', 'Durasi (Menit)', 'Status', 'Diverifikasi Oleh', 'Tanggal'];
+        
+        const csvRows = data.map((r: any) => {
+            return [
+                r.id,
+                `"${r.host_name}"`, // Quote strings to prevent comma issues
+                r.reported_gmv,
+                r.reported_pesanan_sku || 0,
+                r.live_duration_minutes,
+                r.status,
+                `"${r.user_name || ''}"`,
+                `"${new Date(r.created_at).toLocaleString('id-ID')}"`
+            ].join(',');
+        });
+
+        return [headers.join(','), ...csvRows].join('\n');
+    }
+
+    private downloadCSV(csvString: string, filename: string): void {
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    public async handleExportReports(params: any) {
+        try {
+            // Override limit to get all data
+            const exportParams = { ...params, limit: 1000, page: 1 };
+            const res = await reportsAPI.getAll(exportParams);
+            const data = res.data.data;
+
+            if (!data || data.length === 0) {
+                this.handleError("Tidak ada data laporan untuk diekspor");
+                return;
+            }
+
+            const csvString = this.generateCSVString(data);
+            const filename = `Laporan_Kepstore_${new Date().toISOString().split('T')[0]}.csv`;
+            
+            this.downloadCSV(csvString, filename);
+
+            this.showNotification("Berhasil mengekspor data laporan", "success");
+        } catch (err: any) {
+            this.handleError(err.message || "Gagal mengekspor data laporan");
         }
     }
 }

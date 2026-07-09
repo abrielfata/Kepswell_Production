@@ -21,7 +21,7 @@ export default function HostsPage() {
     const [nameError, setNameError] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
 
-    const { hosts, createHost, creating, deleteHost, isLoading } = useHosts();
+    const { hosts, createHost: create, creating, deleteHost, isLoading } = useHosts();
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
@@ -56,7 +56,7 @@ export default function HostsPage() {
 
     const handleCreate = async () => {
         const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
-        await webClient.handleTambahHost(fullName, createHost, handleClose);
+        await webClient.handleTambahHost(fullName, create, handleClose);
     };
 
     return (
