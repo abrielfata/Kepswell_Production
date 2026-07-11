@@ -61,24 +61,21 @@ export class OCRService {
     private parsePesananSKU(text: string): number {
         const clean = text.replace(/\s+/g, ' ');
 
-        // Prioritas 1: Angka yang langsung SEBELUM label "Pesanan SKU"
-        // Contoh: "Rp77,8K 1\nGMV Langsung Pesanan SKU"
-        // OCR sering membaca sebagai: "Rp77,8K 1 GMV Langsung Pesanan SKU"
+        // Prioritas 1: Angka setelah GMV (Pola TikTok Live: Rp...K SPASI angka kecil (< 1000) = Pesanan SKU)
+        const afterGmv = clean.match(/Rp[\d.,]+K?\s+(\d{1,4})\b(?!\s*(?:K|Juta|Impresi|Tayangan|Komentar))/i);
+        if (afterGmv) return parseInt(afterGmv[1], 10);
+
+        // Prioritas 2: Angka yang langsung SEBELUM label "Pesanan SKU"
         const beforeLabel = clean.match(/(\d+)\s*(?:Pesanan\s*SKU)/i);
         if (beforeLabel) return parseInt(beforeLabel[1], 10);
 
-        // Prioritas 2: Angka yang langsung SETELAH label "Pesanan SKU" (hanya boleh dipisah spasi atau tanda baca)
+        // Prioritas 3: Angka yang langsung SETELAH label "Pesanan SKU" (hanya boleh dipisah spasi atau tanda baca)
         const afterLabel = clean.match(/Pesanan\s*SKU\s*[:\-]?\s*(\d+)/i);
         if (afterLabel) return parseInt(afterLabel[1], 10);
 
-        // Prioritas 3: Pola "SKU" dengan angka di sekitarnya
+        // Prioritas 4: Pola "SKU" dengan angka di sekitarnya
         const skuMatch = clean.match(/(\d+)\s*SKU/i);
         if (skuMatch) return parseInt(skuMatch[1], 10);
-
-        // Prioritas 4: Angka setelah GMV (hanya jika kecil, bukan Komentar/Tayangan)
-        // Kita cari pola Rp...K SPASI angka kecil (< 1000) = Pesanan SKU
-        const afterGmv = clean.match(/Rp[\d.,]+K?\s+(\d{1,4})\b(?!\s*(?:K|Juta|Impresi|Tayangan|Komentar))/i);
-        if (afterGmv) return parseInt(afterGmv[1], 10);
 
         return 0;
     }
