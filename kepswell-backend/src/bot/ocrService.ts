@@ -65,16 +65,16 @@ export class OCRService {
         const afterGmv = clean.match(/Rp[\d.,]+K?\s+(\d{1,4})\b(?!\s*(?:K|Juta|Impresi|Tayangan|Komentar))/i);
         if (afterGmv) return parseInt(afterGmv[1], 10);
 
-        // Prioritas 2: Angka yang langsung SEBELUM label "Pesanan SKU"
-        const beforeLabel = clean.match(/(\d+)\s*(?:Pesanan\s*SKU)/i);
+        // Prioritas 2: Angka yang langsung SEBELUM label "Pesanan SKU" (OCR kadang baca SKIJ)
+        const beforeLabel = clean.match(/(\d+)\s*(?:Pesanan\s*SK[A-Z]+)/i);
         if (beforeLabel) return parseInt(beforeLabel[1], 10);
 
         // Prioritas 3: Angka yang langsung SETELAH label "Pesanan SKU" (hanya boleh dipisah spasi atau tanda baca)
-        const afterLabel = clean.match(/Pesanan\s*SKU\s*[:\-]?\s*(\d+)/i);
+        const afterLabel = clean.match(/Pesanan\s*SK[A-Z]+\s*[:\-]?\s*(\d+)/i);
         if (afterLabel) return parseInt(afterLabel[1], 10);
 
         // Prioritas 4: Pola "SKU" dengan angka di sekitarnya
-        const skuMatch = clean.match(/(\d+)\s*SKU/i);
+        const skuMatch = clean.match(/(\d+)\s*SK[A-Z]+/i);
         if (skuMatch) return parseInt(skuMatch[1], 10);
 
         return 0;
