@@ -67,8 +67,8 @@ export class OCRService {
         const beforeLabel = clean.match(/(\d+)\s*(?:Pesanan\s*SKU)/i);
         if (beforeLabel) return parseInt(beforeLabel[1], 10);
 
-        // Prioritas 2: Angka yang langsung SETELAH label "Pesanan SKU"
-        const afterLabel = clean.match(/Pesanan\s*SKU\s*[^0-9]*(\d+)/i);
+        // Prioritas 2: Angka yang langsung SETELAH label "Pesanan SKU" (hanya boleh dipisah spasi atau tanda baca)
+        const afterLabel = clean.match(/Pesanan\s*SKU\s*[:\-]?\s*(\d+)/i);
         if (afterLabel) return parseInt(afterLabel[1], 10);
 
         // Prioritas 3: Pola "SKU" dengan angka di sekitarnya

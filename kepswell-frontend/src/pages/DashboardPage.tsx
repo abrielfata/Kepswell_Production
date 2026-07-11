@@ -11,10 +11,10 @@ import { formatCurrency, formatDuration } from '../utils/format';
 
 const STAT_ITEMS = [
     { key: 'total_reports', label: 'Total Laporan' },
-    { key: 'pending',       label: 'Menunggu' },
-    { key: 'approved',      label: 'Disetujui' },
-    { key: 'rejected',      label: 'Ditolak' },
-    { key: 'total_gmv',     label: 'Total GMV', currency: true },
+    { key: 'pending', label: 'Menunggu' },
+    { key: 'approved', label: 'Disetujui' },
+    { key: 'rejected', label: 'Ditolak' },
+    { key: 'total_gmv', label: 'Total GMV', currency: true },
 ] as const;
 
 export default function DashboardPage() {
@@ -36,7 +36,7 @@ export default function DashboardPage() {
 
     const handleExportDashboard = () => {
         if (!ranking || ranking.length === 0) return;
-        
+
         const headers = ['Rank', 'Host', 'Total GMV (Rp)', 'Sesi', 'Total Durasi (Menit)', 'Pesanan SKU'];
         const csvRows = ranking.map((h: any) => [
             h.rank,
@@ -46,7 +46,7 @@ export default function DashboardPage() {
             h.total_duration_minutes,
             h.total_pesanan_sku
         ].join(','));
-        
+
         const csvString = [headers.join(','), ...csvRows].join('\n');
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -72,9 +72,9 @@ export default function DashboardPage() {
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Button 
-                        variant="outlined" 
-                        startIcon={<DownloadIcon />} 
+                    <Button
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
                         onClick={handleExportDashboard}
                         disabled={rankLoading || ranking.length === 0}
                         sx={{ height: 40 }}
@@ -115,7 +115,7 @@ export default function DashboardPage() {
                                     ? <Skeleton width="50%" height={28} />
                                     : <Typography sx={{ fontSize: '1.35rem', fontWeight: 700, color: '#1a1d23', lineHeight: 1 }}>
                                         {'currency' in s ? formatCurrency(Number(val)) : val}
-                                      </Typography>
+                                    </Typography>
                                 }
                             </CardContent>
                         </Card>
@@ -133,25 +133,25 @@ export default function DashboardPage() {
                         {rankLoading
                             ? <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 1 }} />
                             : chartData.length > 0
-                            ? (
-                                <ResponsiveContainer width="100%" height={220}>
-                                    <BarChart data={chartData} margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
-                                        <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f3f4f6' }}
-                                            contentStyle={{ border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12, boxShadow: 'none' }}
-                                            formatter={(v: any) => [`${v}K`, 'GMV']}
-                                        />
-                                        <Bar dataKey="GMV" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <Box sx={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Typography sx={{ color: '#9ca3af', fontSize: '0.82rem' }}>Belum ada data</Typography>
-                                </Box>
-                            )
+                                ? (
+                                    <ResponsiveContainer width="100%" height={220}>
+                                        <BarChart data={chartData} margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
+                                            <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                                            <Tooltip
+                                                cursor={{ fill: '#f3f4f6' }}
+                                                contentStyle={{ border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12, boxShadow: 'none' }}
+                                                formatter={(v: any) => [`${v}K`, 'GMV']}
+                                            />
+                                            <Bar dataKey="GMV" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Box sx={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Typography sx={{ color: '#9ca3af', fontSize: '0.82rem' }}>Belum ada data</Typography>
+                                    </Box>
+                                )
                         }
                     </CardContent>
                 </Card>
