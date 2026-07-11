@@ -102,12 +102,23 @@ export class OCRService {
 
             const rawText = response.data.ParsedResults?.[0]?.ParsedText || '';
 
+            const parsedPesananSKU = this.parsePesananSKU(rawText);
+            const parsedGMV = this.parseGMV(rawText);
+            const parsedDurationMinutes = this.parseDurationMinutes(rawText);
+
+            // DEBUG LOG — hapus setelah masalah selesai
+            console.log('=== OCR RAW TEXT ===');
+            console.log(rawText);
+            console.log('=== PARSED ===');
+            console.log('GMV:', parsedGMV, '| Pesanan SKU:', parsedPesananSKU, '| Durasi (mnt):', parsedDurationMinutes);
+            console.log('====================');
+
             return {
                 success:               true,
                 rawText,
-                parsedGMV:             this.parseGMV(rawText),
-                parsedDurationMinutes: this.parseDurationMinutes(rawText),
-                parsedPesananSKU:      this.parsePesananSKU(rawText),
+                parsedGMV,
+                parsedDurationMinutes,
+                parsedPesananSKU,
             };
         } catch (err: any) {
             return {
