@@ -59,23 +59,27 @@ export class OCRService {
     }
 
     private parsePesananSKU(text: string): number {
-        const clean = text.replace(/\s+/g, ' ');
+        const clean = text.replace(/\s+/g, ' ').trim();
 
-        // Prioritas 1: Angka setelah GMV (Pola TikTok Live: Rp...K SPASI angka kecil (< 1000) = Pesanan SKU)
-        const afterGmv = clean.match(/Rp[\d.,]+K?\s+(\d{1,4})\b(?!\s*(?:K|Juta|Impresi|Tayangan|Komentar))/i);
-        if (afterGmv) return parseInt(afterGmv[1], 10);
+        // Prioritas 1: GMV dengan suffix K diikuti LANGSUNG angka (dengan/tanpa spasi)
+        // Menangani: "Rp163K 2 ..." dan "Rp163K2 ..." (OCR merges)
+        // \s* = nol atau lebih spasi → lebih toleran dari \s+
+        const afterGmvK = clean.match(/Rp[\d.,]+K\s*(\d{1,4})\b/i);
+        if (afterGmvK) return parseInt(afterGmvK[1], 10);
 
-        // Prioritas 2: Angka yang langsung SEBELUM label "Pesanan SKU" (OCR kadang baca SKIJ)
-        const beforeLabel = clean.match(/(\d+)\s*(?:Pesanan\s*SK[A-Z]+)/i);
+        // Prioritas 2: GMV tanpa suffix K, diikuti angka, dan "Pesanan SK" ada dalam 60 karakter berikut
+        // Menangani: "Rp500 2 GMV Langsung Pesanan SKU ..."
+        const afterGmvNoK = clean.match(/Rp[\d.,]+\s+(\d{1,4})\b(?=.{0,60}Pesanan\s+SK)/i);
+        if (afterGmvNoK) return parseInt(afterGmvNoK[1], 10);
+
+        // Prioritas 3: Angka yang langsung SEBELUM label "Pesanan SK..." (OCR per-kolom / SKIJ dll)
+        // Menangani: "2 Pesanan SKU" atau "2 Pesanan SKIJ"
+        const beforeLabel = clean.match(/\b(\d{1,4})\s+Pesanan\s+SK[A-Z]*/i);
         if (beforeLabel) return parseInt(beforeLabel[1], 10);
 
-        // Prioritas 3: Angka yang langsung SETELAH label "Pesanan SKU" (hanya boleh dipisah spasi atau tanda baca)
-        const afterLabel = clean.match(/Pesanan\s*SK[A-Z]+\s*[:\-]?\s*(\d+)/i);
+        // Prioritas 4: Angka setelah label "Pesanan SK" (hanya boleh dipisah spasi/tanda baca)
+        const afterLabel = clean.match(/Pesanan\s+SK[A-Z]*\s*[:\-]?\s*(\d{1,4})\b/i);
         if (afterLabel) return parseInt(afterLabel[1], 10);
-
-        // Prioritas 4: Pola "SKU" dengan angka di sekitarnya
-        const skuMatch = clean.match(/(\d+)\s*SK[A-Z]+/i);
-        if (skuMatch) return parseInt(skuMatch[1], 10);
 
         return 0;
     }
@@ -88,7 +92,7 @@ export class OCRService {
             form.append('isOverlayRequired', 'false');
             form.append('detectOrientation', 'true');
             form.append('scale',             'true');
-            form.append('OCREngine',         '2');
+            form.append('OCREngine',         '3');
             form.append('file',              fs.createReadStream(imagePath));
 
             const response = await axios.post('https://api.ocr.space/parse/image', form, {
