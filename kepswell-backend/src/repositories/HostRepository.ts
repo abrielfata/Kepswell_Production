@@ -100,7 +100,8 @@ export class HostRepository {
     }
 
     async deactivateHostRecord(id: number): Promise<boolean> {
-        const result = await query('UPDATE hosts SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+        await query('DELETE FROM host_registration_codes WHERE host_id = $1', [id]);
+        const result = await query('DELETE FROM hosts WHERE id = $1', [id]);
         return (result.rowCount ?? 0) > 0;
     }
 
