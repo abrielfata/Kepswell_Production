@@ -8,7 +8,7 @@ export class HostController {
         try {
             const isActive = req.query.is_active !== undefined
                 ? req.query.is_active === 'true'
-                : undefined;
+                : true; // Default to true if not explicitly asked
             const hosts = await this.hostService.getAll(isActive);
             return res.status(200).json({ success: true, data: hosts });
         } catch (err) {

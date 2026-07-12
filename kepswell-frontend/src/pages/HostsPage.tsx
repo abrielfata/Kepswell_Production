@@ -71,7 +71,12 @@ export default function HostsPage() {
                         Kelola host dan kode registrasi sekali pakai (Telegram Chat ID setelah aktivasi)
                     </Typography>
                 </Box>
-                <Button variant="contained" onClick={() => setCreateOpen(true)} sx={{ px: 2 }}>
+                <Button variant="contained" onClick={() => {
+                    if (document.activeElement instanceof HTMLElement) {
+                        document.activeElement.blur();
+                    }
+                    setCreateOpen(true);
+                }} sx={{ px: 2 }}>
                     Tambah Host
                 </Button>
             </Box>
