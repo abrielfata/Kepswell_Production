@@ -41,6 +41,9 @@ export default function HostsPage() {
     };
 
     const handleDeleteClick = (host: Host) => {
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
         setHostToDelete(host);
         setDeleteOpen(true);
     };
@@ -215,7 +218,7 @@ export default function HostsPage() {
                     </Typography>
                 </DialogContent>
                 <DialogActions sx={{ pb: 2, px: 3 }}>
-                    <Button onClick={() => setDeleteOpen(false)} sx={{ color: '#6b7280' }}>
+                    <Button onClick={() => setDeleteOpen(false)} sx={{ color: '#6b7280' }} autoFocus>
                         Batal
                     </Button>
                     <Button variant="contained" color="error" onClick={confirmDelete}>
