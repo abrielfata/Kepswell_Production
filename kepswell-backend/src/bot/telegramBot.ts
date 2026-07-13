@@ -44,9 +44,6 @@ export class TelegramBot {
     private readonly pendingReports = new Map<string, any>();
     private readonly attempts = new Map<string, { count: number; resetAt: number }>();
 
-    private pollingOffset = 0;
-    private pollingActive = false;
-
 
 
     private isRateLimited(chatId: string): boolean {
@@ -317,53 +314,10 @@ export class TelegramBot {
         console.log('🤖 Webhook set:', res.data.ok);
     }
 
-    async deleteWebhook(): Promise<void> {
-        await axios.post(`${this.BASE_URL}/deleteWebhook`);
-        console.log('🤖 Webhook deleted (polling mode aktif)');
-    }
-
-    async startPolling(): Promise<void> {
-        if (this.pollingActive) return;
-        this.pollingActive = true;
-
-        await this.deleteWebhook();
-        console.log('🤖 Bot polling dimulai...');
-
-        const poll = async () => {
-            if (!this.pollingActive) return;
-            try {
-                const res = await axios.get(`${this.BASE_URL}/getUpdates`, {
-                    params: {
-                        offset: this.pollingOffset,
-                        timeout: 10,
-                        allowed_updates: ['message'],
-                    },
-                    timeout: 15000,
-                });
-
-                const updates: any[] = res.data.result || [];
-                for (const update of updates) {
-                    this.pollingOffset = update.update_id + 1;
-                    this.processUpdate(update).catch(console.error);
-                }
-            } catch (err: any) {
-                if (err.code !== 'ECONNABORTED') {
-                    console.error('Polling error:', err.message);
-                }
-            }
-            setTimeout(poll, 1000);
-        };
-
-        poll();
-    }
 }
 
-
 export const telegramBot = new TelegramBot();
-
 
 export const processUpdate = (update: any) => telegramBot.processUpdate(update);
 export const notifyHostStatusUpdate = (params: NotifyStatusParams) => telegramBot.notifyHostStatusUpdate(params);
 export const setupWebhook = (url: string) => telegramBot.setupWebhook(url);
-export const deleteWebhook = () => telegramBot.deleteWebhook();
-export const startPolling = () => telegramBot.startPolling();
