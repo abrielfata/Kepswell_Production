@@ -72,7 +72,7 @@ export default function DashboardPage() {
             csvLines.push(`LAPORAN LIVE TIKTOK KEPSWELL BULAN ${m},,,,,`);
             
             const formatTotalJam = totalJamDec % 1 === 0 ? totalJamDec.toString() : totalJamDec.toFixed(1).replace('.', ',');
-            csvLines.push(`TOTAL REKAP,,,${totalCO},${formatCsvCurrency(totalGMV)},${formatTotalJam}`);
+            csvLines.push(`TOTAL REKAP,,,${totalCO},"${formatCsvCurrency(totalGMV)}","${formatTotalJam}"`);
             csvLines.push(`TANGGAL,NAMA,JAM,JUMLAH CO,PENGHASILAN,JAM`);
 
             Object.keys(grouped).forEach(dateStr => {
@@ -92,7 +92,7 @@ export default function DashboardPage() {
                     const endM = String(end.getMinutes()).padStart(2, '0');
                     const shiftStr = `${startH}.${startM}-${endH}.${endM}`;
 
-                    csvLines.push(`${dateStr},${r.host_name},${shiftStr},${co},${formatCsvCurrency(gmv)},${durStr}`);
+                    csvLines.push(`${dateStr},"${r.host_name}",${shiftStr},${co},"${formatCsvCurrency(gmv)}","${durStr}"`);
                 });
                 csvLines.push(',,,,,'); 
             });
