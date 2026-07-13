@@ -8,6 +8,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
+import { reportsAPI } from '../api/reports';
 
 const STAT_ITEMS = [
     { key: 'total_reports', label: 'Total Laporan' },
@@ -34,29 +35,81 @@ export default function DashboardPage() {
         if (ranking.length > 0) console.log('Rendering table with data:', ranking);
     }, [ranking]);
 
-    const handleExportDashboard = () => {
-        if (!ranking || ranking.length === 0) return;
+    const handleExportDashboard = async () => {
+        try {
+            const res = await reportsAPI.getAll({ ...monthParams, status: 'APPROVED', limit: 1000, page: 1 });
+            const data = res.data.data;
+            if (!data || data.length === 0) return;
 
-        const headers = ['Rank', 'Host', 'Total GMV (Rp)', 'Sesi', 'Total Durasi (Menit)', 'Pesanan SKU'];
-        const csvRows = ranking.map((h: any) => [
-            h.rank,
-            `"${h.host_name}"`,
-            h.total_gmv,
-            h.approved_reports,
-            h.total_duration_minutes,
-            h.total_pesanan_sku
-        ].join(','));
+            const grouped: Record<string, any[]> = {};
+            let totalCO = 0;
+            let totalGMV = 0;
+            let totalJamDec = 0;
 
-        const csvString = [headers.join(','), ...csvRows].join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const period = selectedMonth ? `Bulan_${selectedMonth}` : 'Semua_Periode';
-        link.setAttribute('download', `Peringkat_Host_${period}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            data.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+            data.forEach((r: any) => {
+                const dateObj = new Date(r.created_at);
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const year = dateObj.getFullYear();
+                const dateStr = `${day}/${month}/${year}`;
+
+                if (!grouped[dateStr]) grouped[dateStr] = [];
+                grouped[dateStr].push(r);
+
+                totalCO += (r.reported_pesanan_sku || 0);
+                totalGMV += (r.reported_gmv || 0);
+                totalJamDec += (r.live_duration_minutes || 0) / 60;
+            });
+
+            const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+            const m = selectedMonth ? monthNames[Number(selectedMonth) - 1] : "SEMUA PERIODE";
+            
+            const formatCsvCurrency = (val: number) => 'Rp' + Math.floor(val).toLocaleString('id-ID'); 
+
+            let csvLines: string[] = [];
+            csvLines.push(`LAPORAN LIVE TIKTOK KEPSWELL BULAN ${m},,,,,`);
+            
+            const formatTotalJam = totalJamDec % 1 === 0 ? totalJamDec.toString() : totalJamDec.toFixed(1).replace('.', ',');
+            csvLines.push(`TOTAL REKAP,,,${totalCO},${formatCsvCurrency(totalGMV)},${formatTotalJam}`);
+            csvLines.push(`TANGGAL,NAMA,JAM,JUMLAH CO,PENGHASILAN,JAM`);
+
+            Object.keys(grouped).forEach(dateStr => {
+                grouped[dateStr].forEach(r => {
+                    const co = r.reported_pesanan_sku || 0;
+                    const gmv = r.reported_gmv || 0;
+                    
+                    const durationH = (r.live_duration_minutes || 0) / 60;
+                    const durStr = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
+
+                    const end = new Date(r.created_at);
+                    const start = new Date(end.getTime() - (r.live_duration_minutes || 0) * 60000);
+                    
+                    const startH = String(start.getHours()).padStart(2, '0');
+                    const startM = String(start.getMinutes()).padStart(2, '0');
+                    const endH = String(end.getHours()).padStart(2, '0');
+                    const endM = String(end.getMinutes()).padStart(2, '0');
+                    const shiftStr = `${startH}.${startM}-${endH}.${endM}`;
+
+                    csvLines.push(`${dateStr},${r.host_name},${shiftStr},${co},${formatCsvCurrency(gmv)},${durStr}`);
+                });
+                csvLines.push(',,,,,'); 
+            });
+
+            const csvString = csvLines.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const period = selectedMonth ? `Bulan_${selectedMonth}` : 'Semua_Periode';
+            link.setAttribute('download', `Laporan_Live_Tiktok_${period}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch(err) {
+            console.error(err);
+        }
     };
 
     return (
