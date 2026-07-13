@@ -38,7 +38,7 @@ export default function DashboardPage() {
     const handleExportDashboard = async () => {
         try {
             const res = await reportsAPI.getAll({ ...monthParams, status: 'APPROVED', limit: 1000, page: 1 });
-            const data = res.data.data;
+            const data = res.data.data.reports;
             if (!data || data.length === 0) return;
 
             const grouped: Record<string, any[]> = {};
