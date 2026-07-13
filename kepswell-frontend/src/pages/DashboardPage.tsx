@@ -41,6 +41,18 @@ export default function DashboardPage() {
             const data = res.data.data.reports;
             if (!data || data.length === 0) return;
 
+            const calculateShiftDuration = (minutes: number) => {
+                const hours = Math.floor(minutes / 60);
+                const remainder = minutes % 60;
+                let additional = 0;
+                if (remainder >= 30 && remainder < 50) {
+                    additional = 0.5;
+                } else if (remainder >= 50) {
+                    additional = 1;
+                }
+                return hours + additional;
+            };
+
             const grouped: Record<string, any[]> = {};
             let totalCO = 0;
             let totalGMV = 0;
@@ -60,7 +72,7 @@ export default function DashboardPage() {
 
                 totalCO += Number(r.reported_pesanan_sku || 0);
                 totalGMV += Number(r.reported_gmv || 0);
-                totalJamDec += Number(r.live_duration_minutes || 0) / 60;
+                totalJamDec += calculateShiftDuration(Number(r.live_duration_minutes || 0));
             });
 
             const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
@@ -80,7 +92,7 @@ export default function DashboardPage() {
                     const co = Number(r.reported_pesanan_sku || 0);
                     const gmv = Number(r.reported_gmv || 0);
                     
-                    const durationH = Number(r.live_duration_minutes || 0) / 60;
+                    const durationH = calculateShiftDuration(Number(r.live_duration_minutes || 0));
                     const durStr = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
 
                     const end = new Date(r.created_at);
