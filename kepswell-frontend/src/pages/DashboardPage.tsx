@@ -58,9 +58,9 @@ export default function DashboardPage() {
                 if (!grouped[dateStr]) grouped[dateStr] = [];
                 grouped[dateStr].push(r);
 
-                totalCO += (r.reported_pesanan_sku || 0);
-                totalGMV += (r.reported_gmv || 0);
-                totalJamDec += (r.live_duration_minutes || 0) / 60;
+                totalCO += Number(r.reported_pesanan_sku || 0);
+                totalGMV += Number(r.reported_gmv || 0);
+                totalJamDec += Number(r.live_duration_minutes || 0) / 60;
             });
 
             const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
@@ -69,22 +69,22 @@ export default function DashboardPage() {
             const formatCsvCurrency = (val: number) => 'Rp' + Math.floor(val).toLocaleString('id-ID'); 
 
             let csvLines: string[] = [];
-            csvLines.push(`LAPORAN LIVE TIKTOK KEPSWELL BULAN ${m},,,,,`);
+            csvLines.push(`LAPORAN LIVE TIKTOK KEPSWELL BULAN ${m};;;;;`);
             
             const formatTotalJam = totalJamDec % 1 === 0 ? totalJamDec.toString() : totalJamDec.toFixed(1).replace('.', ',');
-            csvLines.push(`TOTAL REKAP,,,${totalCO},${formatCsvCurrency(totalGMV)},${formatTotalJam}`);
-            csvLines.push(`TANGGAL,NAMA,JAM,JUMLAH CO,PENGHASILAN,JAM`);
+            csvLines.push(`TOTAL REKAP;;;${totalCO};${formatCsvCurrency(totalGMV)};${formatTotalJam}`);
+            csvLines.push(`TANGGAL;NAMA;JAM;JUMLAH CO;PENGHASILAN;JAM`);
 
             Object.keys(grouped).forEach(dateStr => {
                 grouped[dateStr].forEach(r => {
-                    const co = r.reported_pesanan_sku || 0;
-                    const gmv = r.reported_gmv || 0;
+                    const co = Number(r.reported_pesanan_sku || 0);
+                    const gmv = Number(r.reported_gmv || 0);
                     
-                    const durationH = (r.live_duration_minutes || 0) / 60;
+                    const durationH = Number(r.live_duration_minutes || 0) / 60;
                     const durStr = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
 
                     const end = new Date(r.created_at);
-                    const start = new Date(end.getTime() - (r.live_duration_minutes || 0) * 60000);
+                    const start = new Date(end.getTime() - Number(r.live_duration_minutes || 0) * 60000);
                     
                     const startH = String(start.getHours()).padStart(2, '0');
                     const startM = String(start.getMinutes()).padStart(2, '0');
@@ -92,12 +92,12 @@ export default function DashboardPage() {
                     const endM = String(end.getMinutes()).padStart(2, '0');
                     const shiftStr = `${startH}.${startM}-${endH}.${endM}`;
 
-                    csvLines.push(`${dateStr},${r.host_name},${shiftStr},${co},${formatCsvCurrency(gmv)},${durStr}`);
+                    csvLines.push(`${dateStr};${r.host_name};${shiftStr};${co};${formatCsvCurrency(gmv)};${durStr}`);
                 });
-                csvLines.push(',,,,,'); 
+                csvLines.push(';;;;;'); 
             });
 
-            const csvString = csvLines.join('\n');
+            const csvString = '\uFEFF' + csvLines.join('\n');
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
