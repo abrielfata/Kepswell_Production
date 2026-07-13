@@ -5,7 +5,7 @@ import { errorHandler } from './middleware/errorMiddleware';
 import authRoutes   from './routes/authRoutes';
 import hostRoutes   from './routes/hostRoutes';
 import reportRoutes from './routes/reportRoutes';
-import { processUpdate, startPolling, setupWebhook } from './bot/telegramBot';
+import { processUpdate, setupWebhook } from './bot/telegramBot';
 
 const app = express();
 
@@ -68,20 +68,14 @@ app.listen(ENV.PORT, async () => {
     console.log(`🚀 Server running on port ${ENV.PORT}`);
     console.log(`📍 ENV: ${ENV.NODE_ENV}`);
 
-    if (ENV.NODE_ENV === 'development') {
-        // Di localhost: gunakan Long Polling (tidak perlu ngrok/domain publik)
-        startPolling();
+    const renderUrl = process.env.RENDER_EXTERNAL_URL;
+    if (renderUrl) {
+        const webhookUrl = `${renderUrl}/api/bot/webhook`;
+        setupWebhook(webhookUrl)
+            .then(() => console.log(`🤖 Webhook registered: ${webhookUrl}`))
+            .catch(err => console.error('❌ Webhook setup failed:', err.message));
     } else {
-        // Di production (Render): daftarkan webhook otomatis menggunakan RENDER_EXTERNAL_URL
-        const renderUrl = process.env.RENDER_EXTERNAL_URL;
-        if (renderUrl) {
-            const webhookUrl = `${renderUrl}/api/bot/webhook`;
-            setupWebhook(webhookUrl)
-                .then(() => console.log(`🤖 Webhook registered: ${webhookUrl}`))
-                .catch(err => console.error('❌ Webhook setup failed:', err.message));
-        } else {
-            console.log('⚠️  RENDER_EXTERNAL_URL tidak ditemukan. Setup webhook manual via GET /api/bot/setup-webhook');
-        }
+        console.log('⚠️  RENDER_EXTERNAL_URL tidak ditemukan. Setup webhook manual via GET /api/bot/setup-webhook');
     }
 });
 
