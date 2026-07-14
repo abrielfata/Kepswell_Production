@@ -5,6 +5,8 @@ export const reportsAPI = {
         status?: string;
         month?: number;
         year?: number;
+        startDate?: string;
+        endDate?: string;
         host_id?: number;
         page?: number;
         limit?: number;
@@ -17,6 +19,6 @@ export const reportsAPI = {
 
     getAvailableMonths: () => api.get('/reports/available-months'),
 
-    getDashboardOverview: (params?: { month?: number; year?: number }) =>
+    getDashboardOverview: (params?: { month?: number; year?: number; startDate?: string; endDate?: string }) =>
         api.get('/reports/dashboard', { params }),
 };

@@ -9,6 +9,8 @@ export class ReportRepository {
         host_id?: number;
         page?: number;
         limit?: number;
+        startDate?: string;
+        endDate?: string;
     }): Promise<{ reports: any[]; total: number }> {
         const conditions: string[] = [];
         const params: any[] = [];
@@ -29,6 +31,12 @@ export class ReportRepository {
         if (filters.host_id) {
             conditions.push(`r.host_id = $${idx++}`);
             params.push(filters.host_id);
+        }
+        if (filters.startDate && filters.endDate) {
+            conditions.push(`r.created_at >= $${idx++}`);
+            params.push(`${filters.startDate} 00:00:00`);
+            conditions.push(`r.created_at <= $${idx++}`);
+            params.push(`${filters.endDate} 23:59:59`);
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -137,13 +145,20 @@ export class ReportRepository {
         return result.rows[0] || null;
     }
 
-    async queryStatisticsData(month?: number, year?: number): Promise<any> {
+    async queryStatisticsData(filters: { month?: number, year?: number, startDate?: string, endDate?: string }): Promise<any> {
         const conditions: string[] = [];
         const params: any[] = [];
         let idx = 1;
 
-        if (month) { conditions.push(`month = $${idx++}`); params.push(month); }
-        if (year)  { conditions.push(`year = $${idx++}`);  params.push(year); }
+        if (filters.startDate && filters.endDate) {
+            conditions.push(`created_at >= $${idx++}`);
+            params.push(`${filters.startDate} 00:00:00`);
+            conditions.push(`created_at <= $${idx++}`);
+            params.push(`${filters.endDate} 23:59:59`);
+        } else {
+            if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
+            if (filters.year)  { conditions.push(`year = $${idx++}`);  params.push(filters.year); }
+        }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -160,20 +175,51 @@ export class ReportRepository {
         return result.rows[0];
     }
 
-    async getHostPerformance(month?: number, year?: number): Promise<HostPerformance[]> {
+    async getHostPerformance(filters: { month?: number, year?: number, startDate?: string, endDate?: string }): Promise<HostPerformance[]> {
         const conditions: string[] = [];
         const params: any[] = [];
         let idx = 1;
 
-        if (month) { conditions.push(`month = $${idx++}`); params.push(month); }
-        if (year)  { conditions.push(`year = $${idx++}`);  params.push(year); }
+        if (filters.startDate && filters.endDate) {
+            conditions.push(`r.created_at >= $${idx++}`);
+            params.push(`${filters.startDate} 00:00:00`);
+            conditions.push(`r.created_at <= $${idx++}`);
+            params.push(`${filters.endDate} 23:59:59`);
+        } else {
+            if (filters.month) { conditions.push(`r.month = $${idx++}`); params.push(filters.month); }
+            if (filters.year)  { conditions.push(`r.year = $${idx++}`);  params.push(filters.year); }
+        }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-        const result = await query(
-            `SELECT * FROM v_host_performance ${where} ORDER BY total_gmv DESC`,
-            params
-        );
+        const sql = `
+            SELECT 
+                h.id AS host_id,
+                h.full_name AS host_name,
+                COUNT(r.id) AS total_reports,
+                COUNT(CASE WHEN r.status = 'APPROVED' THEN 1 END) AS approved_reports,
+                COALESCE(SUM(CASE WHEN r.status = 'APPROVED' THEN r.reported_gmv ELSE 0 END), 0) AS total_gmv,
+                COALESCE(SUM(CASE WHEN r.status = 'APPROVED' THEN r.reported_pesanan_sku ELSE 0 END), 0) AS total_pesanan_sku,
+                COALESCE(SUM(CASE WHEN r.status = 'APPROVED' THEN r.live_duration_minutes ELSE 0 END), 0) AS total_duration_minutes,
+                COALESCE(SUM(CASE WHEN r.status = 'APPROVED' THEN 
+                    FLOOR(r.live_duration_minutes / 120.0) + 
+                    CASE WHEN (r.live_duration_minutes % 120) >= 60 THEN 1 ELSE 0 END 
+                ELSE 0 END), 0) AS total_sessions,
+                COALESCE(AVG(CASE WHEN r.status = 'APPROVED' THEN r.reported_gmv ELSE NULL END), 0) AS avg_gmv_per_session,
+                CASE 
+                    WHEN SUM(CASE WHEN r.status = 'APPROVED' THEN r.live_duration_minutes ELSE 0 END) > 0 
+                    THEN COALESCE(SUM(CASE WHEN r.status = 'APPROVED' THEN r.reported_gmv ELSE 0 END), 0) / 
+                         (SUM(CASE WHEN r.status = 'APPROVED' THEN r.live_duration_minutes ELSE 0 END) / 60.0)
+                    ELSE 0 
+                END AS gmv_per_hour
+            FROM hosts h
+            JOIN reports r ON h.id = r.host_id
+            ${where}
+            GROUP BY h.id, h.full_name
+            ORDER BY total_gmv DESC
+        `;
+
+        const result = await query(sql, params);
         return result.rows;
     }
 
