@@ -10,6 +10,8 @@ export class ReportService {
         status?: string;
         month?: number;
         year?: number;
+        startDate?: string;
+        endDate?: string;
         host_id?: number;
         page?: number;
         limit?: number;
@@ -57,8 +59,8 @@ export class ReportService {
         return updated;
     }
 
-    async calculateStatistics(month?: number, year?: number) {
-        return this.reportRepo.queryStatisticsData(month, year);
+    async calculateStatistics(filters: { month?: number, year?: number, startDate?: string, endDate?: string }) {
+        return this.reportRepo.queryStatisticsData(filters);
     }
 
     async getAvailableMonths() {

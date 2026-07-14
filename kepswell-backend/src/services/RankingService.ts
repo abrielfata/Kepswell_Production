@@ -8,8 +8,8 @@ interface RankedHost extends HostPerformance {
 export class RankingService {
     private reportRepo = new ReportRepository();
 
-    async generateRanking(month?: number, year?: number): Promise<RankedHost[]> {
-        const hosts = await this.reportRepo.getHostPerformance(month, year);
+    async generateRanking(filters: { month?: number, year?: number, startDate?: string, endDate?: string }): Promise<RankedHost[]> {
+        const hosts = await this.reportRepo.getHostPerformance(filters);
         if (hosts.length === 0) return [];
 
         const rankedHosts = this.calculateRankings(hosts);

@@ -12,6 +12,7 @@ import { formatCurrency, formatDuration, formatDateTime } from '../utils/format'
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../contexts/NotificationContext';
 import { WebClient } from '../api/WebClient';
+import DateRangeFilter from '../components/DateRangeFilter';
 
 const STATUS_COLOR: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
     APPROVED: 'success',
@@ -29,16 +30,17 @@ export default function ReportsPage() {
     const [page, setPage] = useState(0);
     const [rowsPerPage] = useState(10);
     const [statusFilter, setStatusFilter] = useState('');
-    const [monthFilter, setMonthFilter] = useState<number | ''>('');
+    const [dateFilter, setDateFilter] = useState<{ preset?: string, startDate?: string, endDate?: string }>({});
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
     const params = {
         page: page + 1, limit: rowsPerPage,
         ...(statusFilter ? { status: statusFilter } : {}),
-        ...(monthFilter ? { month: Number(monthFilter) } : {}),
+        ...(dateFilter.startDate ? { startDate: dateFilter.startDate } : {}),
+        ...(dateFilter.endDate ? { endDate: dateFilter.endDate } : {}),
     };
 
-    const { reports, total, monthsData, updateStatus, isPending, isLoading } = useReports(params);
+    const { reports, total, updateStatus, isPending, isLoading } = useReports(params);
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, () => {});
@@ -66,16 +68,13 @@ export default function ReportsPage() {
                             <MenuItem value="REJECTED">Ditolak</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl sx={{ minWidth: 140 }}>
-                        <Select displayEmpty value={monthFilter}
-                            onChange={e => { setMonthFilter(e.target.value as number); setPage(0); }}
-                            renderValue={v => !v ? 'Semua bulan' : monthsData?.find(m => m.month === Number(v))?.display_name ?? String(v)}>
-                            <MenuItem value="">Semua bulan</MenuItem>
-                            {monthsData?.map(m => (
-                                <MenuItem key={`${m.year}-${m.month}`} value={m.month}>{m.display_name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+
+                    <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+
+                    <Button variant="outlined" sx={{ height: 40 }}
+                        onClick={() => webClient.handleExportReports(params)}>
+                        Export CSV
+                    </Button>
                 </Stack>
             </Box>
 

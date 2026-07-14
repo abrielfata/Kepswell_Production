@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
-    Box, Card, CardContent, Typography, Select, MenuItem,
-    FormControl, Table, TableBody, TableCell,
+    Box, Card, CardContent, Typography,
+    Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Paper, Skeleton, Button
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import DateRangeFilter from '../components/DateRangeFilter';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
@@ -19,13 +20,14 @@ const STAT_ITEMS = [
 ] as const;
 
 export default function DashboardPage() {
-    const [selectedMonth, setSelectedMonth] = useState<number | ''>('');
+    const [dateFilter, setDateFilter] = useState<{ preset?: string, startDate?: string, endDate?: string }>({});
 
-    const monthParams = selectedMonth
-        ? { month: Number(selectedMonth), year: new Date().getFullYear() }
-        : {};
+    const monthParams = {
+        startDate: dateFilter.startDate,
+        endDate: dateFilter.endDate
+    };
 
-    const { monthsData, stats, statsLoading, ranking, rankLoading, chartData } = useDashboard(monthParams);
+    const { stats, statsLoading, ranking, rankLoading, chartData } = useDashboard(monthParams);
 
     useEffect(() => {
         if (chartData.length > 0) console.log('Rendering chart with data:', chartData);
@@ -72,8 +74,7 @@ export default function DashboardPage() {
                 totalJamDec += calcShiftDuration(Number(r.live_duration_minutes || 0));
             });
 
-            const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
-            const m = selectedMonth ? monthNames[Number(selectedMonth) - 1] : "SEMUA PERIODE";
+            const m = dateFilter.preset && dateFilter.preset !== 'custom' ? dateFilter.preset.toUpperCase() : "SEMUA PERIODE";
             
             const formatCsvCurrency = (val: number) => 'Rp' + Math.floor(val).toLocaleString('id-ID'); 
 
@@ -111,7 +112,7 @@ export default function DashboardPage() {
             const url  = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            const period = selectedMonth ? `Bulan_${selectedMonth}` : 'Semua_Periode';
+            const period = dateFilter.preset || 'Semua_Periode';
             link.setAttribute('download', `Laporan_Live_Tiktok_${period}.csv`);
             document.body.appendChild(link);
             link.click();
@@ -144,19 +145,7 @@ export default function DashboardPage() {
                     >
                         Export CSV
                     </Button>
-                    <FormControl sx={{ minWidth: 160 }}>
-                        <Select
-                            displayEmpty value={selectedMonth}
-                            onChange={e => setSelectedMonth(e.target.value as number)}
-                            renderValue={v => !v ? 'Semua periode' : monthsData?.find((m: any) => m.month === Number(v))?.display_name ?? String(v)}
-                            sx={{ height: 40 }}
-                        >
-                            <MenuItem value="">Semua periode</MenuItem>
-                            {monthsData?.map((m: any) => (
-                                <MenuItem key={`${m.year}-${m.month}`} value={m.month}>{m.display_name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
                 </Box>
             </Box>
 
