@@ -20,6 +20,8 @@ export class OCRService {
             .replace(/\s+/g, ' ');
 
         const patterns = [
+            /PEROLEHAN\s*GMV\s*\(RP\).*?#\s*([\d.,]+)/i,
+            /PEROLEHAN\s*GMV\s*\(RP\)[^\d]*([\d.,]+)/i,
             /GMV\s*LANGSUNG[^0-9]*RP\s*([\d.,K]+)/i,
             /GMV[^0-9]*RP\s*([\d.,K]+)/i,
             /PENJUALAN[^0-9]*RP\s*([\d.,K]+)/i,
@@ -30,10 +32,14 @@ export class OCRService {
             const match = clean.match(pattern);
             if (match) {
                 const raw = match[1].toUpperCase();
-                let num = parseFloat(
-                    raw.replace(/\./g, '').replace(',', '.').replace(/[^0-9.]/g, '')
-                );
-                if (raw.endsWith('K')) num *= 1000;
+                let num = 0;
+                if (raw.endsWith('K')) {
+                    const cleanStr = raw.replace('K', '').replace(',', '.');
+                    num = parseFloat(cleanStr) * 1000;
+                } else {
+                    const cleanStr = raw.replace(/[.,]/g, '');
+                    num = parseInt(cleanStr, 10);
+                }
                 if (num > 0 && num < 10_000_000_000) return num;
             }
         }
@@ -42,7 +48,7 @@ export class OCRService {
 
     private parseDurationMinutes(text: string): number {
         const patterns = [
-            { regex: /(\d+)\s*jam(?:\s*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
+            { regex: /(\d+)\s*(?:jam|j)(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
             { regex: /(\d+)\s*(?:mnt|menit)\b/i,                     type: 'menit' },
             { regex: /(\d{1,2}):(\d{2}):(\d{2})/,                    type: 'hms' },
             { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)/i,           type: 'menit' },
@@ -60,6 +66,10 @@ export class OCRService {
 
     private parsePesananSKU(text: string): number {
         const clean = text.replace(/\s+/g, ' ').trim();
+
+        // Format Baru: Produk terjual di LIVE 3
+        const terjualMatch = clean.match(/Produk\s+terjual\s+di\s+LIVE\s+(\d+)/i);
+        if (terjualMatch) return parseInt(terjualMatch[1], 10);
 
         // Prioritas 1: GMV dengan suffix K diikuti LANGSUNG angka (dengan/tanpa spasi)
         // Menangani: "Rp163K 2 ..." dan "Rp163K2 ..." (OCR merges)
