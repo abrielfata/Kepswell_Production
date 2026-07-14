@@ -41,38 +41,35 @@ export default function DashboardPage() {
             const data = res.data.data.reports;
             if (!data || data.length === 0) return;
 
-            const calculateShiftDuration = (minutes: number) => {
-                const hours = Math.floor(minutes / 60);
+            const grouped: Record<string, any[]> = {};
+            let totalCO     = 0;
+            let totalGMV    = 0;
+            let totalJamDec = 0;
+
+            const calcShiftDuration = (minutes: number) => {
+                const hours     = Math.floor(minutes / 60);
                 const remainder = minutes % 60;
-                let additional = 0;
-                if (remainder >= 30 && remainder < 50) {
-                    additional = 0.5;
-                } else if (remainder >= 50) {
-                    additional = 1;
-                }
+                let additional  = 0;
+                if (remainder >= 30 && remainder < 50) additional = 0.5;
+                else if (remainder >= 50) additional = 1;
                 return hours + additional;
             };
-
-            const grouped: Record<string, any[]> = {};
-            let totalCO = 0;
-            let totalGMV = 0;
-            let totalJamDec = 0;
 
             data.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
             data.forEach((r: any) => {
                 const dateObj = new Date(r.created_at);
-                const day = String(dateObj.getDate()).padStart(2, '0');
+                const day   = String(dateObj.getDate()).padStart(2, '0');
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const year = dateObj.getFullYear();
+                const year  = dateObj.getFullYear();
                 const dateStr = `${day}/${month}/${year}`;
 
                 if (!grouped[dateStr]) grouped[dateStr] = [];
                 grouped[dateStr].push(r);
 
-                totalCO += Number(r.reported_pesanan_sku || 0);
-                totalGMV += Number(r.reported_gmv || 0);
-                totalJamDec += calculateShiftDuration(Number(r.live_duration_minutes || 0));
+                totalCO     += Number(r.reported_pesanan_sku || 0);
+                totalGMV    += Number(r.reported_gmv || 0);
+                totalJamDec += calcShiftDuration(Number(r.live_duration_minutes || 0));
             });
 
             const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
@@ -89,19 +86,19 @@ export default function DashboardPage() {
 
             Object.keys(grouped).forEach(dateStr => {
                 grouped[dateStr].forEach(r => {
-                    const co = Number(r.reported_pesanan_sku || 0);
+                    const co  = Number(r.reported_pesanan_sku || 0);
                     const gmv = Number(r.reported_gmv || 0);
                     
-                    const durationH = calculateShiftDuration(Number(r.live_duration_minutes || 0));
-                    const durStr = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
+                    const durationH = calcShiftDuration(Number(r.live_duration_minutes || 0));
+                    const durStr    = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
 
-                    const end = new Date(r.created_at);
+                    const end   = new Date(r.created_at);
                     const start = new Date(end.getTime() - Number(r.live_duration_minutes || 0) * 60000);
                     
                     const startH = String(start.getHours()).padStart(2, '0');
                     const startM = String(start.getMinutes()).padStart(2, '0');
-                    const endH = String(end.getHours()).padStart(2, '0');
-                    const endM = String(end.getMinutes()).padStart(2, '0');
+                    const endH   = String(end.getHours()).padStart(2, '0');
+                    const endM   = String(end.getMinutes()).padStart(2, '0');
                     const shiftStr = `${startH}.${startM}-${endH}.${endM}`;
 
                     csvLines.push(`${dateStr};${r.host_name};${shiftStr};${co};${formatCsvCurrency(gmv)};${durStr}`);
@@ -111,7 +108,7 @@ export default function DashboardPage() {
 
             const csvString = '\uFEFF' + csvLines.join('\n');
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+            const url  = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             const period = selectedMonth ? `Bulan_${selectedMonth}` : 'Semua_Periode';
@@ -123,6 +120,7 @@ export default function DashboardPage() {
             console.error(err);
         }
     };
+
 
     return (
         <Box>
@@ -286,7 +284,7 @@ export default function DashboardPage() {
                                         <TableCell>Rank</TableCell>
                                         <TableCell>Host</TableCell>
                                         <TableCell align="right">Total GMV</TableCell>
-                                        <TableCell align="right">Sesi</TableCell>
+                                        <TableCell align="right">Laporan</TableCell>
                                         <TableCell align="right">Durasi</TableCell>
                                         <TableCell align="right">Pesanan SKU</TableCell>
                                     </TableRow>

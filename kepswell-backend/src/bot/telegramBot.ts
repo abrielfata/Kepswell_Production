@@ -8,6 +8,7 @@ import { ReportService } from '../services/ReportService';
 import { OCRService } from './ocrService';
 
 
+
 export interface NotifyStatusParams {
     host_id: number;
     report_id: number;

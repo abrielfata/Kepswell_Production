@@ -1,3 +1,26 @@
+/**
+ * Hitung jumlah sesi berdasarkan durasi live.
+ * 1 sesi = 120 menit, dan butuh minimal 30 menit sisa untuk dihitung sesi berikutnya.
+ *
+ * Contoh:
+ *   59 menit  → 0 sesi
+ *   60 menit  → 1 sesi
+ *   90 menit  → 1 sesi
+ *  120 menit  → 1 sesi
+ *  179 menit  → 1 sesi
+ *  180 menit  → 2 sesi
+ *  240 menit  → 2 sesi
+ *  300 menit  → 3 sesi
+ */
+export const calculateSessions = (minutes: number): number => {
+    if (!minutes || minutes <= 0) return 0;
+    const SESSION_DURATION = 120;
+    const MIN_THRESHOLD    = 60; // butuh min 1 jam sisa untuk dihitung sesi berikutnya
+    const fullSessions = Math.floor(minutes / SESSION_DURATION);
+    const remainder    = minutes % SESSION_DURATION;
+    return fullSessions + (remainder >= MIN_THRESHOLD ? 1 : 0);
+};
+
 export const formatCurrency = (amount: number): string => {
     const num = Number(amount);
     if (isNaN(num)) return 'Rp 0';
