@@ -1,9 +1,6 @@
 export const formatCurrency = (amount: number): string => {
     const num = Number(amount);
     if (isNaN(num)) return 'Rp 0';
-    if (num >= 1_000_000_000) return `Rp ${(num / 1_000_000_000).toFixed(1)}B`;
-    if (num >= 1_000_000)     return `Rp ${(num / 1_000_000).toFixed(1)}M`;
-    if (num >= 1_000)         return `Rp ${(num / 1_000).toFixed(0)}K`;
     return new Intl.NumberFormat('id-ID', {
         style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
     }).format(num);
