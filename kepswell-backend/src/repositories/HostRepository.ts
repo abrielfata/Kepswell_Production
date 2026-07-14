@@ -49,7 +49,10 @@ export class HostRepository {
     /**
      * Buat host baru dalam satu transaksi:
      * 1. INSERT ke tabel hosts
-     * 2. Langsung UPDATE host_code = 'KSW-' || LPAD(id, 4, '0')
+     * 2. Langsung UPDATE host_code = 'KSW-[YYMM]-[NNNN]'
+     *    - YYMM  : tahun & bulan join (contoh: 2507 untuk Juli 2025)
+     *    - NNNN  : nomor urut global dari id, dipadding 4 digit
+     *    Contoh hasil: KSW-2507-0001
      * Sehingga host_code selalu konsisten dengan id dan tidak bisa NULL.
      */
     async insertHostRecord(data: { full_name: string }): Promise<Host> {
@@ -62,7 +65,8 @@ export class HostRepository {
 
             const updateRes = await client.query<Host>(
                 `UPDATE hosts
-                 SET host_code = 'KSW-' || LPAD(id::text, 4, '0'), updated_at = CURRENT_TIMESTAMP
+                 SET host_code = 'KSW-' || TO_CHAR(CURRENT_TIMESTAMP, 'YYMM') || '-' || LPAD(id::text, 4, '0'),
+                     updated_at = CURRENT_TIMESTAMP
                  WHERE id = $1
                  RETURNING *`,
                 [inserted.id]
