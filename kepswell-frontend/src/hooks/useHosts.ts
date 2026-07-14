@@ -23,15 +23,7 @@ export function useHosts() {
             );
         },
         onError: (err: any) => {
-            const msg: string = err?.response?.data?.message ?? '';
-            if (err?.response?.status === 409) {
-                throw new Error(msg || 'Nama host sudah terdaftar');
-            } else if (err?.response?.status === 400) {
-                throw new Error(msg || 'Nama tidak valid');
-            } else {
-                showNotification('Gagal menambahkan host', 'error');
-                throw new Error('Gagal menambahkan host');
-            }
+            showNotification(err.message || 'Gagal menambahkan host', 'error');
         },
     });
 
@@ -41,9 +33,8 @@ export function useHosts() {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
             showNotification('Host berhasil dihapus', 'success');
         },
-        onError: () => {
-            showNotification('Gagal menghapus host', 'error');
-            throw new Error('Gagal menghapus host');
+        onError: (err: any) => {
+            showNotification(err.message || 'Gagal menghapus host', 'error');
         },
     });
 

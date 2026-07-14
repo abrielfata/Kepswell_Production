@@ -27,9 +27,8 @@ export function useReports(params: any) {
             const label = vars.status === 'APPROVED' ? 'disetujui' : 'ditolak';
             showNotification(`Laporan berhasil ${label}`, 'success');
         },
-        onError: () => {
-            showNotification('Gagal memverifikasi laporan', 'error');
-            throw new Error('Gagal memverifikasi laporan');
+        onError: (err: any) => {
+            showNotification(err.message || 'Gagal memverifikasi laporan', 'error');
         },
     });
 

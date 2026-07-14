@@ -18,6 +18,17 @@ api.interceptors.response.use(
             localStorage.removeItem('token');
             window.location.href = '/login';
         }
+
+        if (err.response?.data?.message) {
+            err.message = err.response.data.message;
+        } else if (err.response?.status >= 500) {
+            err.message = 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.';
+        } else if (err.message === 'Network Error') {
+            err.message = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
+        } else if (err.message.includes('status code')) {
+            err.message = 'Terjadi kesalahan tidak terduga. Silakan coba lagi.';
+        }
+
         return Promise.reject(err);
     }
 );
