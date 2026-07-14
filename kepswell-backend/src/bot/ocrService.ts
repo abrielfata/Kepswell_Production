@@ -48,10 +48,11 @@ export class OCRService {
 
     private parseDurationMinutes(text: string): number {
         const patterns = [
-            { regex: /(\d+)\s*(?:jam|j)(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
+            // Tambahkan \b agar 'j' tidak me-match awalan kata lain (contoh: 'Jul' atau 'Jan')
+            { regex: /(\d+)\s*(?:jam|j)\b(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
             { regex: /(\d+)\s*(?:mnt|menit)\b/i,                     type: 'menit' },
             { regex: /(\d{1,2}):(\d{2}):(\d{2})/,                    type: 'hms' },
-            { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)/i,           type: 'menit' },
+            { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)\b/i,           type: 'menit' },
         ];
 
         for (const p of patterns) {
