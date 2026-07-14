@@ -27,6 +27,10 @@ export class ReportService {
         return this.reportRepo.insertReportRecord(data);
     }
 
+    async checkDuplicate(hostId: number, gmv: number, sku: number, duration: number, liveDate: string | null) {
+        return this.reportRepo.checkDuplicate(hostId, gmv, sku, duration, liveDate);
+    }
+
     async verifyReportData(id: number, status: string, userId?: number) {
         const valid = Object.values(REPORT_STATUS) as string[];
         if (!valid.includes(status)) {

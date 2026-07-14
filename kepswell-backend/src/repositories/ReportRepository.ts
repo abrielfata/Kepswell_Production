@@ -70,6 +70,36 @@ export class ReportRepository {
         return result.rows[0] || null;
     }
 
+    async checkDuplicate(
+        hostId: number, 
+        gmv: number, 
+        pesananSku: number, 
+        duration: number, 
+        liveDate: string | null
+    ): Promise<boolean> {
+        let sql = `
+            SELECT 1 FROM reports
+            WHERE host_id = $1
+              AND reported_gmv = $2
+              AND reported_pesanan_sku = $3
+              AND live_duration_minutes = $4
+        `;
+        const params: any[] = [hostId, gmv, pesananSku, duration];
+        
+        if (liveDate) {
+            sql += ` AND live_date = $5`;
+            params.push(liveDate);
+        } else {
+            // Jika live_date tidak terbaca, cukup cari duplicate di bulan yang sama untuk berjaga-jaga
+            // atau cukup dari 4 parameter di atas
+        }
+        
+        sql += ` LIMIT 1`;
+        
+        const result = await query(sql, params);
+        return (result.rowCount ?? 0) > 0;
+    }
+
     async insertReportRecord(data: {
         host_id: number;
         reported_gmv: number;
@@ -77,19 +107,20 @@ export class ReportRepository {
         live_duration_minutes: number;
         screenshot_url?: string;
         ocr_raw_text?: string;
+        live_date?: string | null;
         month: number;
         year: number;
     }): Promise<Report> {
         const result = await query(
             `INSERT INTO reports (
                 host_id, reported_gmv, reported_pesanan_sku, live_duration_minutes,
-                screenshot_url, ocr_raw_text, month, year
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                screenshot_url, ocr_raw_text, live_date, month, year
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
              RETURNING *`,
             [
                 data.host_id, data.reported_gmv, data.reported_pesanan_sku,
                 data.live_duration_minutes, data.screenshot_url || null,
-                data.ocr_raw_text || null, data.month, data.year
+                data.ocr_raw_text || null, data.live_date || null, data.month, data.year
             ]
         );
         return result.rows[0];

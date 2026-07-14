@@ -181,6 +181,7 @@ export class TelegramBot {
                 live_duration_minutes: pending.duration,
                 screenshot_url: pending.screenshotUrl,
                 ocr_raw_text: pending.rawText,
+                live_date: pending.liveDate || null,
                 month: now.getMonth() + 1,
                 year: now.getFullYear(),
             });
@@ -250,6 +251,19 @@ export class TelegramBot {
             ? `${Math.floor(ocr.parsedDurationMinutes / 60)}j ${ocr.parsedDurationMinutes % 60}m`
             : 'Tidak terdeteksi';
 
+        const isDuplicate = await this.reportService.checkDuplicate(
+            host.id,
+            ocr.parsedGMV,
+            ocr.parsedPesananSKU,
+            ocr.parsedDurationMinutes,
+            ocr.parsedLiveDate || null
+        );
+
+        if (isDuplicate) {
+            await this.sendMessage(chatId, `⚠️ *Laporan Ditolak*\nLaporan ini terdeteksi sebagai DUPLIKAT (sudah pernah dikirimkan sebelumnya).`);
+            return;
+        }
+
         const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
 
         this.pendingReports.set(telegramChatId, {
@@ -258,6 +272,7 @@ export class TelegramBot {
             pesanan_sku: ocr.parsedPesananSKU,
             duration: ocr.parsedDurationMinutes,
             rawText: ocr.rawText,
+            liveDate: ocr.parsedLiveDate,
             screenshotUrl,
         });
 
