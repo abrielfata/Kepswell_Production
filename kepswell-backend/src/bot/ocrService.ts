@@ -9,6 +9,7 @@ export interface OcrResult {
     parsedGMV: number;
     parsedDurationMinutes: number;
     parsedPesananSKU: number;
+    parsedLiveDate?: string | null;
     error?: string;
 }
 
@@ -48,8 +49,8 @@ export class OCRService {
 
     private parseDurationMinutes(text: string): number {
         const patterns = [
-            // Tambahkan \b agar 'j' tidak me-match awalan kata lain (contoh: 'Jul' atau 'Jan')
-            { regex: /(\d+)\s*(?:jam|j)\b(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
+            // Handle 'j', 'jam', and OCR misreads like ')', ']', 'l', 'i'
+            { regex: /(\d+)\s*(?:jam\b|j\b|\)|\]|l\b|i\b)(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
             { regex: /(\d+)\s*(?:mnt|menit)\b/i,                     type: 'menit' },
             { regex: /(\d{1,2}):(\d{2}):(\d{2})/,                    type: 'hms' },
             { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)\b/i,           type: 'menit' },
@@ -95,6 +96,27 @@ export class OCRService {
         return 0;
     }
 
+    private parseLiveDate(text: string): string | null {
+        // Cari pola tanggal seperti "12 Jul", "12 July"
+        const match = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*/i);
+        if (match) {
+            const day = parseInt(match[1], 10);
+            const monthStr = match[2].toLowerCase();
+            const months: Record<string, number> = {
+                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+                'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+            };
+            const month = months[monthStr];
+            if (month) {
+                const now = new Date();
+                let year = now.getFullYear();
+                if (month > now.getMonth() + 1) year -= 1; // Jika bulan OCR lebih besar dari bulan saat ini, asumsikan tahun lalu
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+        }
+        return null;
+    }
+
     async extractFromImage(imagePath: string): Promise<OcrResult> {
         try {
             const form = new FormData();
@@ -120,12 +142,13 @@ export class OCRService {
             const parsedPesananSKU = this.parsePesananSKU(rawText);
             const parsedGMV = this.parseGMV(rawText);
             const parsedDurationMinutes = this.parseDurationMinutes(rawText);
+            const parsedLiveDate = this.parseLiveDate(rawText);
 
             // DEBUG LOG — hapus setelah masalah selesai
             console.log('=== OCR RAW TEXT ===');
             console.log(rawText);
             console.log('=== PARSED ===');
-            console.log('GMV:', parsedGMV, '| Pesanan SKU:', parsedPesananSKU, '| Durasi (mnt):', parsedDurationMinutes);
+            console.log('GMV:', parsedGMV, '| Pesanan SKU:', parsedPesananSKU, '| Durasi (mnt):', parsedDurationMinutes, '| Live Date:', parsedLiveDate);
             console.log('====================');
 
             return {
@@ -134,6 +157,7 @@ export class OCRService {
                 parsedGMV,
                 parsedDurationMinutes,
                 parsedPesananSKU,
+                parsedLiveDate,
             };
         } catch (err: any) {
             return {

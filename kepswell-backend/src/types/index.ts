@@ -30,6 +30,7 @@ export interface Report {
     live_duration_minutes: number;
     screenshot_url: string | null;
     ocr_raw_text: string | null;
+    live_date?: Date | string | null;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     month: number;
     year: number;
