@@ -125,7 +125,7 @@ export class OCRService {
             form.append('isOverlayRequired', 'false');
             form.append('detectOrientation', 'true');
             form.append('scale',             'true');
-            form.append('OCREngine',         '3');
+            form.append('OCREngine',         '2');
             form.append('file',              fs.createReadStream(imagePath));
 
             const response = await axios.post('https://api.ocr.space/parse/image', form, {
