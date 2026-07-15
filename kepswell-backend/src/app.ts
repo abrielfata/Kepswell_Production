@@ -1,7 +1,10 @@
 import express from 'express';
 import path from 'path';
+import helmet from 'helmet';
 import { ENV } from './config/env';
 import { errorHandler } from './middleware/errorMiddleware';
+import { authenticate, authorizeManager } from './middleware/authMiddleware';
+import { apiLimiter } from './middleware/securityMiddleware';
 import authRoutes   from './routes/authRoutes';
 import hostRoutes   from './routes/hostRoutes';
 import reportRoutes from './routes/reportRoutes';
@@ -9,9 +12,17 @@ import { processUpdate, setupWebhook } from './bot/telegramBot';
 
 const app = express();
 
+// ── Security Headers ──
+app.use(helmet());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ── Global Rate Limiter ──
+app.use('/api', apiLimiter);
+
+// ── Protected uploads: hanya user yang login (Manager) bisa akses screenshot ──
+app.use('/uploads', authenticate, authorizeManager, express.static(path.join(__dirname, '../uploads')));
 
 const VERCEL_PATTERN = /^https:\/\/(kepstore|kepswell).*\.vercel\.app$/;
 
