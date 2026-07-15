@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Box, TextField, Button, Typography, Alert, CircularProgress, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,9 +11,22 @@ export default function LoginPage() {
     const [error, setError]       = useState('');
     const [loading, setLoading]   = useState(false);
 
+    const passwordRef = useRef<HTMLInputElement>(null);
+
     const { attemptLogin: login } = useAuth();
     const navigate  = useNavigate();
     const { showNotification } = useNotification();
+
+    /**
+     * Bersihkan password dari state DAN DOM setelah login attempt.
+     * Ini meminimalkan waktu password terlihat di Inspect Element.
+     */
+    const clearPassword = useCallback(() => {
+        setPassword('');
+        if (passwordRef.current) {
+            passwordRef.current.value = '';
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,7 +35,10 @@ export default function LoginPage() {
         const webClient = new WebClient(navigate, showNotification, login, setError);
 
         setLoading(true);
-        await webClient.handleSubmit(email, password);
+        const currentPassword = password;
+        // Langsung bersihkan password dari state/DOM sebelum request
+        clearPassword();
+        await webClient.handleSubmit(email, currentPassword);
         setLoading(false);
     };
 
@@ -59,7 +75,7 @@ export default function LoginPage() {
                         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
                     )}
 
-                    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box component="form" onSubmit={handleSubmit} autoComplete="off" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Box>
                             <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#374151', mb: 0.75 }}>
                                 Email
@@ -67,6 +83,7 @@ export default function LoginPage() {
                             <TextField
                                 type="email" placeholder="manager@kepstore.com"
                                 value={email} onChange={e => setEmail(e.target.value)}
+                                autoComplete="username"
                                 required fullWidth
                             />
                         </Box>
@@ -77,6 +94,8 @@ export default function LoginPage() {
                             <TextField
                                 type="password" placeholder="••••••••"
                                 value={password} onChange={e => setPassword(e.target.value)}
+                                inputRef={passwordRef}
+                                autoComplete="current-password"
                                 required fullWidth
                             />
                         </Box>

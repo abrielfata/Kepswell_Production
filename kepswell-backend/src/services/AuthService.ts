@@ -69,8 +69,16 @@ export class AuthService {
         const isValid = await bcrypt.compare(oldPassword, hash);
         if (!isValid) throw new AppError('Password lama tidak sesuai', 400);
 
-        if (newPassword.length < 6)
-            throw new AppError('Password baru minimal 6 karakter', 400);
+        if (newPassword.length < 8) {
+            throw new AppError('Password baru minimal 8 karakter', 400);
+        }
+        
+        const hasLetter = /[a-zA-Z]/.test(newPassword);
+        const hasNumber = /[0-9]/.test(newPassword);
+        
+        if (!hasLetter || !hasNumber) {
+            throw new AppError('Password baru harus mengandung kombinasi huruf dan angka', 400);
+        }
 
         const newHash = await bcrypt.hash(newPassword, 10);
         await this.userRepo.updatePassword(userId, newHash);
