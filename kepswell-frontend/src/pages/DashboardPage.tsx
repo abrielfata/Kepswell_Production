@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import DateRangeFilter from '../components/DateRangeFilter';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
 import { reportsAPI } from '../api/reports';
@@ -180,24 +180,30 @@ export default function DashboardPage() {
                 {/* Bar chart */}
                 <Card>
                     <CardContent>
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', mb: 0.5 }}>GMV per Host</Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', mb: 0.5 }}>Tren Pendapatan Harian</Typography>
                         <Typography sx={{ fontSize: '0.75rem', color: '#6b7280', mb: 2 }}>Dalam ribuan IDR</Typography>
                         {rankLoading
                             ? <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 1 }} />
                             : chartData.length > 0
                                 ? (
                                     <ResponsiveContainer width="100%" height={220}>
-                                        <BarChart data={chartData} margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
+                                        <AreaChart data={chartData} margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="colorGmv" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.8}/>
+                                                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
                                             <CartesianGrid vertical={false} stroke="#f3f4f6" />
                                             <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                                             <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                                             <Tooltip
-                                                cursor={{ fill: '#f3f4f6' }}
+                                                cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4' }}
                                                 contentStyle={{ border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12, boxShadow: 'none' }}
                                                 formatter={(v: any) => [`${v}K`, 'GMV']}
                                             />
-                                            <Bar dataKey="GMV" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                        </BarChart>
+                                            <Area type="monotone" dataKey="GMV" stroke="#2563EB" fillOpacity={1} fill="url(#colorGmv)" />
+                                        </AreaChart>
                                     </ResponsiveContainer>
                                 ) : (
                                     <Box sx={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
