@@ -85,21 +85,19 @@ export class ReportRepository {
         duration: number, 
         liveDate: string | null
     ): Promise<boolean> {
+        // Pengecekan Global: Tidak memfilter berdasarkan host_id agar bisa
+        // menangkap jika ada host B yang mencuri screenshot host A.
         let sql = `
             SELECT 1 FROM reports
-            WHERE host_id = $1
-              AND reported_gmv = $2
-              AND reported_pesanan_sku = $3
-              AND live_duration_minutes = $4
+            WHERE reported_gmv = $1
+              AND reported_pesanan_sku = $2
+              AND live_duration_minutes = $3
         `;
-        const params: any[] = [hostId, gmv, pesananSku, duration];
+        const params: any[] = [gmv, pesananSku, duration];
         
         if (liveDate) {
-            sql += ` AND live_date = $5`;
+            sql += ` AND live_date = $4`;
             params.push(liveDate);
-        } else {
-            // Jika live_date tidak terbaca, cukup cari duplicate di bulan yang sama untuk berjaga-jaga
-            // atau cukup dari 4 parameter di atas
         }
         
         sql += ` LIMIT 1`;
