@@ -98,8 +98,9 @@ export class ReportController {
 
             const statistics = await this.reportService.calculateStatistics(filters);
             const ranking = await this.rankingService.generateRanking(filters);
+            const dailyTrend = await this.reportService.getDailyTrend(filters);
 
-            return res.status(200).json({ success: true, data: { statistics, ranking } });
+            return res.status(200).json({ success: true, data: { statistics, ranking, dailyTrend } });
         } catch (err) {
             next(err);
         }

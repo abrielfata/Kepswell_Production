@@ -66,5 +66,9 @@ export class ReportService {
     async getAvailableMonths() {
         return this.reportRepo.getAvailableMonths();
     }
+
+    async getDailyTrend(filters: { month?: number, year?: number, startDate?: string, endDate?: string }) {
+        return this.reportRepo.getDailyTrend(filters);
+    }
 }
 

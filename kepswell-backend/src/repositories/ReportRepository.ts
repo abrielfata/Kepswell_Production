@@ -234,4 +234,35 @@ export class ReportRepository {
         );
         return result.rows;
     }
+
+    async getDailyTrend(filters: { month?: number, year?: number, startDate?: string, endDate?: string }): Promise<any[]> {
+        const conditions: string[] = [];
+        const params: any[] = [];
+        let idx = 1;
+
+        if (filters.startDate && filters.endDate) {
+            conditions.push(`created_at >= $${idx++}`);
+            params.push(`${filters.startDate} 00:00:00`);
+            conditions.push(`created_at <= $${idx++}`);
+            params.push(`${filters.endDate} 23:59:59`);
+        } else {
+            if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
+            if (filters.year)  { conditions.push(`year = $${idx++}`);  params.push(filters.year); }
+        }
+
+        const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        const sql = `
+            SELECT 
+                TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as date,
+                COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN reported_gmv ELSE 0 END), 0) as total_gmv
+            FROM reports
+            ${where}
+            GROUP BY DATE(created_at)
+            ORDER BY DATE(created_at) ASC
+        `;
+
+        const result = await query(sql, params);
+        return result.rows;
+    }
 }

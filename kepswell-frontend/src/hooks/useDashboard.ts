@@ -22,10 +22,17 @@ export function useDashboard(monthParams: any) {
     const statsLoading = dashboardLoading;
     const rankLoading = dashboardLoading;
 
-    const chartData = ranking.slice(0, 10).map((h: any) => ({
-        name: h.host_name.split(' ')[0],
-        GMV: Math.round(Number(h.total_gmv) / 1_000),
-    }));
+    const dailyTrend = dashboardData?.dailyTrend || [];
+
+    const chartData = dailyTrend.map((d: any) => {
+        const dateObj = new Date(d.date);
+        const day = dateObj.getDate();
+        const month = dateObj.toLocaleString('id-ID', { month: 'short' });
+        return {
+            name: `${day} ${month}`,
+            GMV: Math.round(Number(d.total_gmv) / 1_000),
+        };
+    });
 
     return { monthsData, stats, statsLoading, ranking, rankLoading, chartData };
 }

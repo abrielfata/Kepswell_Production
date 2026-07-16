@@ -21,8 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 // ── Global Rate Limiter ──
 app.use('/api', apiLimiter);
 
-// ── Protected uploads: hanya user yang login (Manager) bisa akses screenshot ──
-app.use('/uploads', authenticate, authorizeManager, express.static(path.join(__dirname, '../uploads')));
+// ── Uploads: public access so images can be loaded in <img> tags ──
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 const VERCEL_PATTERN = /^https:\/\/(kepstore|kepswell).*\.vercel\.app$/;
 
