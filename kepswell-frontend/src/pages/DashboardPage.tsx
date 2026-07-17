@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import {
     Box, Card, CardContent, Typography,
     Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, Paper, Skeleton, Button
+    TableContainer, TableHead, TableRow, Paper, Skeleton
 } from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
-import { reportsAPI } from '../api/reports';
+
 
 const STAT_ITEMS = [
     { key: 'total_reports', label: 'Total Laporan' },
@@ -37,92 +36,6 @@ export default function DashboardPage() {
         if (ranking.length > 0) console.log('Rendering table with data:', ranking);
     }, [ranking]);
 
-    const handleExportDashboard = async () => {
-        try {
-            const res = await reportsAPI.getAll({ ...monthParams, status: 'APPROVED', limit: 1000, page: 1 });
-            const data = res.data.data.reports;
-            if (!data || data.length === 0) return;
-
-            const grouped: Record<string, any[]> = {};
-            let totalCO     = 0;
-            let totalGMV    = 0;
-            let totalJamDec = 0;
-
-            const calcShiftDuration = (minutes: number) => {
-                const hours     = Math.floor(minutes / 60);
-                const remainder = minutes % 60;
-                let additional  = 0;
-                if (remainder >= 30 && remainder < 50) additional = 0.5;
-                else if (remainder >= 50) additional = 1;
-                return hours + additional;
-            };
-
-            data.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-            data.forEach((r: any) => {
-                const dateObj = new Date(r.created_at);
-                const day   = String(dateObj.getDate()).padStart(2, '0');
-                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const year  = dateObj.getFullYear();
-                const dateStr = `${day}/${month}/${year}`;
-
-                if (!grouped[dateStr]) grouped[dateStr] = [];
-                grouped[dateStr].push(r);
-
-                totalCO     += Number(r.reported_pesanan_sku || 0);
-                totalGMV    += Number(r.reported_gmv || 0);
-                totalJamDec += calcShiftDuration(Number(r.live_duration_minutes || 0));
-            });
-
-            const m = dateFilter.preset && dateFilter.preset !== 'custom' ? dateFilter.preset.toUpperCase() : "SEMUA PERIODE";
-            
-            const formatCsvCurrency = (val: number) => 'Rp' + Math.floor(val).toLocaleString('id-ID'); 
-
-            let csvLines: string[] = [];
-            csvLines.push(`LAPORAN LIVE TIKTOK KEPSWELL BULAN ${m};;;;;`);
-            
-            const formatTotalJam = totalJamDec % 1 === 0 ? totalJamDec.toString() : totalJamDec.toFixed(1).replace('.', ',');
-            csvLines.push(`TOTAL REKAP;;;${totalCO};${formatCsvCurrency(totalGMV)};${formatTotalJam}`);
-            csvLines.push(`TANGGAL;NAMA;JAM;JUMLAH CO;PENGHASILAN;JAM`);
-
-            Object.keys(grouped).forEach(dateStr => {
-                grouped[dateStr].forEach(r => {
-                    const co  = Number(r.reported_pesanan_sku || 0);
-                    const gmv = Number(r.reported_gmv || 0);
-                    
-                    const durationH = calcShiftDuration(Number(r.live_duration_minutes || 0));
-                    const durStr    = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
-
-                    const end   = new Date(r.created_at);
-                    const start = new Date(end.getTime() - Number(r.live_duration_minutes || 0) * 60000);
-                    
-                    const startH = String(start.getHours()).padStart(2, '0');
-                    const startM = String(start.getMinutes()).padStart(2, '0');
-                    const endH   = String(end.getHours()).padStart(2, '0');
-                    const endM   = String(end.getMinutes()).padStart(2, '0');
-                    const shiftStr = `${startH}.${startM}-${endH}.${endM}`;
-
-                    csvLines.push(`${dateStr};${r.host_name};${shiftStr};${co};${formatCsvCurrency(gmv)};${durStr}`);
-                });
-                csvLines.push(';;;;;'); 
-            });
-
-            const csvString = '\uFEFF' + csvLines.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const url  = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            const period = dateFilter.preset || 'Semua_Periode';
-            link.setAttribute('download', `Laporan_Live_Tiktok_${period}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch(err) {
-            console.error(err);
-        }
-    };
-
-
     return (
         <Box>
             {/* Page heading + filter */}
@@ -136,15 +49,6 @@ export default function DashboardPage() {
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<DownloadIcon />}
-                        onClick={handleExportDashboard}
-                        disabled={rankLoading || ranking.length === 0}
-                        sx={{ height: 40 }}
-                    >
-                        Export CSV
-                    </Button>
                     <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
                 </Box>
             </Box>

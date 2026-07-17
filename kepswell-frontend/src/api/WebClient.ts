@@ -1,5 +1,6 @@
 import { loginSchema, hostSchema } from '../utils/validations';
 import { reportsAPI } from './reports';
+import * as XLSX from 'xlsx';
 
 export class WebClient {
     private navigate: (path: string) => void;
@@ -173,34 +174,25 @@ export class WebClient {
         }
     }
 
-    private generateCSVString(data: any[]): string {
+    private generateExcelFile(data: any[], filename: string): void {
         const headers = ['ID', 'Host', 'GMV (Rp)', 'Pesanan SKU', 'Durasi (Menit)', 'Status', 'Diverifikasi Oleh', 'Tanggal'];
         
-        const csvRows = data.map((r: any) => {
-            return [
-                r.id,
-                `"${r.host_name}"`, // Quote strings to prevent comma issues
-                r.reported_gmv,
-                r.reported_pesanan_sku || 0,
-                r.live_duration_minutes,
-                r.status,
-                `"${r.user_name || ''}"`,
-                `"${new Date(r.created_at).toLocaleString('id-ID')}"`
-            ].join(',');
-        });
+        const excelRows = data.map((r: any) => ({
+            'ID': r.id,
+            'Host': r.host_name,
+            'GMV (Rp)': r.reported_gmv,
+            'Pesanan SKU': r.reported_pesanan_sku || 0,
+            'Durasi (Menit)': r.live_duration_minutes,
+            'Status': r.status,
+            'Diverifikasi Oleh': r.user_name || '',
+            'Tanggal': new Date(r.created_at).toLocaleString('id-ID')
+        }));
 
-        return [headers.join(','), ...csvRows].join('\n');
-    }
+        const worksheet = XLSX.utils.json_to_sheet(excelRows, { header: headers });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
 
-    private downloadCSV(csvString: string, filename: string): void {
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        XLSX.writeFile(workbook, filename);
     }
 
     public async handleExportReports(params: any) {
@@ -215,12 +207,10 @@ export class WebClient {
                 return;
             }
 
-            const csvString = this.generateCSVString(data);
-            const filename = `Laporan_Kepstore_${new Date().toISOString().split('T')[0]}.csv`;
-            
-            this.downloadCSV(csvString, filename);
+            const filename = `Laporan_Kepstore_${new Date().toISOString().split('T')[0]}.xlsx`;
+            this.generateExcelFile(data, filename);
 
-            this.showNotification("Berhasil mengekspor data laporan", "success");
+            this.showNotification("Berhasil mengekspor data laporan ke Excel", "success");
         } catch (err: any) {
             this.handleError(err.message || "Gagal mengekspor data laporan");
         }
