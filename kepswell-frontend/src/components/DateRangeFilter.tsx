@@ -26,26 +26,11 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
         } else {
             let startDate = '';
             let endDate = '';
-            const today = dayjs();
 
-            if (val === 'today') {
-                startDate = today.format('YYYY-MM-DD');
-                endDate = today.format('YYYY-MM-DD');
-            } else if (val === '7d') {
-                startDate = today.subtract(6, 'day').format('YYYY-MM-DD');
-                endDate = today.format('YYYY-MM-DD');
-            } else if (val === '15d') {
-                startDate = today.subtract(14, 'day').format('YYYY-MM-DD');
-                endDate = today.format('YYYY-MM-DD');
-            } else if (val === '30d') {
-                startDate = today.subtract(29, 'day').format('YYYY-MM-DD');
-                endDate = today.format('YYYY-MM-DD');
-            } else if (val === 'this_month') {
-                startDate = today.startOf('month').format('YYYY-MM-DD');
-                endDate = today.endOf('month').format('YYYY-MM-DD');
-            } else if (val === 'last_month') {
-                startDate = today.subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
-                endDate = today.subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+            if (/^\d{4}-\d{2}$/.test(val)) {
+                const d = dayjs(`${val}-01`);
+                startDate = d.startOf('month').format('YYYY-MM-DD');
+                endDate = d.endOf('month').format('YYYY-MM-DD');
             }
 
             onChange({ preset: val, startDate, endDate });
@@ -78,12 +63,9 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
                     sx={{ height: 40 }}
                     renderValue={(selected) => {
                         if (!selected) return 'Semua Periode';
-                        if (selected === 'today') return 'Hari Ini';
-                        if (selected === '7d') return '7 Hari Terakhir';
-                        if (selected === '15d') return '15 Hari Terakhir';
-                        if (selected === '30d') return '30 Hari Terakhir';
-                        if (selected === 'this_month') return 'Bulan Ini';
-                        if (selected === 'last_month') return 'Bulan Lalu';
+                        if (/^\d{4}-\d{2}$/.test(selected as string)) {
+                            return dayjs(`${selected}-01`).format('MMMM YYYY');
+                        }
                         if (selected === 'custom') {
                             if (value.startDate === value.endDate) {
                                 return dayjs(value.startDate).format('DD MMM YYYY');
@@ -94,12 +76,11 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
                     }}
                 >
                     <MenuItem value="">Semua Periode</MenuItem>
-                    <MenuItem value="today">Hari Ini</MenuItem>
-                    <MenuItem value="7d">7 Hari Terakhir</MenuItem>
-                    <MenuItem value="15d">15 Hari Terakhir</MenuItem>
-                    <MenuItem value="30d">30 Hari Terakhir</MenuItem>
-                    <MenuItem value="this_month">Bulan Ini</MenuItem>
-                    <MenuItem value="last_month">Bulan Lalu</MenuItem>
+                    {Array.from({ length: 12 }).map((_, i) => {
+                        const d = dayjs().subtract(i, 'month');
+                        const val = d.format('YYYY-MM');
+                        return <MenuItem key={val} value={val}>{d.format('MMMM YYYY')}</MenuItem>;
+                    })}
                     <MenuItem value="custom">Pilih Tanggal...</MenuItem>
                 </Select>
             </FormControl>
