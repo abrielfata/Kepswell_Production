@@ -73,7 +73,7 @@ export default function ReportsPage() {
 
                     <Button variant="outlined" sx={{ height: 40 }}
                         onClick={() => webClient.handleExportReports(params)}>
-                        Export CSV
+                        Export Excel
                     </Button>
                 </Stack>
             </Box>
