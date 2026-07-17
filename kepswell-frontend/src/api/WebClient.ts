@@ -200,9 +200,9 @@ export class WebClient {
             // Override limit to get all data
             const exportParams = { ...params, limit: 1000, page: 1 };
             const res = await reportsAPI.getAll(exportParams);
-            const data = res.data.data;
+            const data = res.data.data.reports || [];
 
-            if (!data || data.length === 0) {
+            if (data.length === 0) {
                 this.handleError("Tidak ada data laporan untuk diekspor");
                 return;
             }
