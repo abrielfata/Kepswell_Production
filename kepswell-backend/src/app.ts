@@ -24,16 +24,12 @@ app.use('/api', apiLimiter);
 // ── Uploads: public access so images can be loaded in <img> tags ──
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-const VERCEL_PATTERN = /^https:\/\/(kepstore|kepswell).*\.vercel\.app$/;
-
 const isAllowedOrigin = (origin: string): boolean => {
     if (!origin) return false;
     // Localhost dev
     if (['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'].includes(origin)) return true;
     // URL production statis dari env
     if (ENV.FRONTEND_URL && origin === ENV.FRONTEND_URL) return true;
-    // Semua preview/production URL Vercel milik project ini
-    if (VERCEL_PATTERN.test(origin)) return true;
     return false;
 };
 
