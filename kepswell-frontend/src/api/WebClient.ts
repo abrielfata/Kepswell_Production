@@ -149,6 +149,30 @@ export class WebClient {
         }
     }
 
+    public handleEditSuccess(_res?: any) {
+        this.showNotification("Nama host berhasil diubah", "success");
+    }
+
+    public handleEditError(err: any) {
+        this.setError(err.message || "Gagal mengubah nama host");
+    }
+
+    public async handleEditHost(id: number, fullName: string, updateHost: (data: { id: number; fullName: string }) => Promise<any>, closeEditDialog: () => void) {
+        const error = this.validateName(fullName);
+        if (error) {
+            this.handleValidationError(error);
+            return;
+        }
+
+        try {
+            const res = await updateHost({ id, fullName });
+            this.handleEditSuccess(res);
+            closeEditDialog();
+        } catch (err: any) {
+            this.handleEditError(err);
+        }
+    }
+
     private generateCSVString(data: any[]): string {
         const headers = ['ID', 'Host', 'GMV (Rp)', 'Pesanan SKU', 'Durasi (Menit)', 'Status', 'Diverifikasi Oleh', 'Tanggal'];
         

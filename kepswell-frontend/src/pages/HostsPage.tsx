@@ -16,12 +16,21 @@ import { useNotification } from '../contexts/NotificationContext';
 export default function HostsPage() {
     const [createOpen, setCreateOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
     const [hostToDelete, setHostToDelete] = useState<Host | null>(null);
+    const [hostToEdit, setHostToEdit] = useState<Host | null>(null);
+    
+    // Create form states
     const [fullName, setFullName] = useState('');
     const [nameError, setNameError] = useState('');
+    
+    // Edit form states
+    const [editFullName, setEditFullName] = useState('');
+    const [editNameError, setEditNameError] = useState('');
+    
     const [copiedId, setCopiedId] = useState<number | null>(null);
 
-    const { hosts, createHost: create, creating, deleteHost, isLoading } = useHosts();
+    const { hosts, createHost: create, creating, updateHost, updating, deleteHost, isLoading } = useHosts();
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
@@ -38,6 +47,23 @@ export default function HostsPage() {
         setCreateOpen(false);
         setFullName('');
         setNameError('');
+    };
+
+    const handleEditClose = () => {
+        setEditOpen(false);
+        setHostToEdit(null);
+        setEditFullName('');
+        setEditNameError('');
+    };
+
+    const handleEditClick = (host: Host) => {
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+        setHostToEdit(host);
+        setEditFullName(host.full_name);
+        setEditNameError('');
+        setEditOpen(true);
     };
 
     const handleDeleteClick = (host: Host) => {
@@ -58,8 +84,15 @@ export default function HostsPage() {
     };
 
     const handleCreate = async () => {
-        const webClient = new WebClient(navigate, showNotification, undefined, setNameError);
-        await webClient.handleTambahHost(fullName, create, handleClose);
+        const createClient = new WebClient(navigate, showNotification, undefined, setNameError);
+        await createClient.handleTambahHost(fullName, create, handleClose);
+    };
+
+    const handleEditSubmit = async () => {
+        if (hostToEdit) {
+            const editClient = new WebClient(navigate, showNotification, undefined, setEditNameError);
+            await editClient.handleEditHost(hostToEdit.id, editFullName, updateHost, handleEditClose);
+        }
     };
 
     return (
@@ -156,8 +189,15 @@ export default function HostsPage() {
                                             <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>
                                             <TableCell>
                                                 <Button size="small" variant="text"
+                                                    color="primary"
+                                                    onClick={() => handleEditClick(host)}
+                                                    sx={{ minWidth: 'auto', mr: 1 }}>
+                                                    Edit
+                                                </Button>
+                                                <Button size="small" variant="text"
                                                     color="error"
-                                                    onClick={() => handleDeleteClick(host)}>
+                                                    onClick={() => handleDeleteClick(host)}
+                                                    sx={{ minWidth: 'auto' }}>
                                                     Hapus
                                                 </Button>
                                             </TableCell>
@@ -209,6 +249,43 @@ export default function HostsPage() {
                         disabled={!fullName.trim() || !!webClient.validateName(fullName) || creating}
                         onClick={handleCreate}>
                         Buat Host
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={editOpen} onClose={handleEditClose} maxWidth="xs" fullWidth>
+                <DialogTitle>Edit Nama Host</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 0.5 }}>
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#374151', mb: 0.75 }}>
+                            Nama Lengkap
+                        </Typography>
+                        <TextField
+                            placeholder="Contoh: Abriel Fata"
+                            value={editFullName}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setEditFullName(val);
+                                setEditNameError(webClient.validateName(val) || '');
+                            }}
+                            fullWidth autoFocus
+                            error={!!editNameError}
+                            helperText={editNameError || ' '}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && editFullName.trim() && !webClient.validateName(editFullName)) handleEditSubmit();
+                            }}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleEditClose} sx={{ color: '#6b7280' }}>
+                        Batal
+                    </Button>
+                    <Button variant="contained"
+                        disabled={!editFullName.trim() || !!webClient.validateName(editFullName) || updating || editFullName === hostToEdit?.full_name}
+                        onClick={handleEditSubmit}>
+                        Simpan
                     </Button>
                 </DialogActions>
             </Dialog>
