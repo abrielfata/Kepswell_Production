@@ -38,5 +38,17 @@ export function useHosts() {
         },
     });
 
-    return { hosts, isLoading, createHost, creating, deleteHost, deleting };
+    const { mutateAsync: updateHost, isPending: updating } = useMutation({
+        mutationFn: ({ id, fullName }: { id: number; fullName: string }) => hostsAPI.update(id, { full_name: fullName }),
+        onSuccess: (res) => {
+            const updated = res.data.data as Host;
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
+            showNotification(`Nama host berhasil diubah menjadi ${updated.full_name}`, 'success');
+        },
+        onError: (err: any) => {
+            showNotification(err.message || 'Gagal mengubah host', 'error');
+        },
+    });
+
+    return { hosts, isLoading, createHost, creating, updateHost, updating, deleteHost, deleting };
 }
