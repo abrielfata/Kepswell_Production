@@ -5,7 +5,7 @@ import {
     Chip, Button, Dialog, DialogTitle, DialogContent,
     DialogActions, TextField, IconButton, Tooltip, Alert, Skeleton
 } from '@mui/material';
-import { ContentCopy, Check } from '@mui/icons-material';
+import { ContentCopy, Check, Edit } from '@mui/icons-material';
 import type { Host } from '../types';
 import { formatDate } from '../utils/format';
 import { useHosts } from '../hooks/useHosts';
@@ -158,7 +158,18 @@ export default function HostsPage() {
                                                 </Typography>
                                             </TableCell>
                                             <TableCell>
-                                                <Typography sx={{ fontWeight: 500, fontSize: '0.85rem' }}>{host.full_name}</Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography sx={{ fontWeight: 500, fontSize: '0.85rem' }}>{host.full_name}</Typography>
+                                                    <Tooltip title="Edit Nama">
+                                                        <IconButton 
+                                                            size="small" 
+                                                            onClick={() => handleEditClick(host)}
+                                                            sx={{ color: '#9ca3af', '&:hover': { color: '#2563EB' } }}
+                                                        >
+                                                            <Edit sx={{ fontSize: 16 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Box>
                                             </TableCell>
                                             <TableCell>
                                                 {host.telegram_chat_id
@@ -188,12 +199,6 @@ export default function HostsPage() {
                                             </TableCell>
                                             <TableCell sx={{ color: '#6b7280' }}>{formatDate(host.created_at)}</TableCell>
                                             <TableCell>
-                                                <Button size="small" variant="text"
-                                                    color="primary"
-                                                    onClick={() => handleEditClick(host)}
-                                                    sx={{ minWidth: 'auto', mr: 1 }}>
-                                                    Edit
-                                                </Button>
                                                 <Button size="small" variant="text"
                                                     color="error"
                                                     onClick={() => handleDeleteClick(host)}
