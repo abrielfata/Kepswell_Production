@@ -28,6 +28,7 @@ export interface Report {
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     month: number;
     year: number;
+    live_date: string | null;
     created_at: string;
 }
 

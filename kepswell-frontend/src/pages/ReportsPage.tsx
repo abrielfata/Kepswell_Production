@@ -120,7 +120,7 @@ export default function ReportsPage() {
                                             <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
                                                 {r.user_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
                                             </TableCell>
-                                            <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
+                                            <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.live_date || r.created_at)}</TableCell>
                                             <TableCell>
                                                 {r.status === 'PENDING' && (
                                                     <Button size="small" variant="outlined"
