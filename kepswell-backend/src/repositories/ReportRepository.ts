@@ -92,6 +92,7 @@ export class ReportRepository {
             WHERE reported_gmv = $1
               AND reported_pesanan_sku = $2
               AND live_duration_minutes = $3
+              AND status != 'REJECTED'
         `;
         const params: any[] = [gmv, pesananSku, duration];
         
