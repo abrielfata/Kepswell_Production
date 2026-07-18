@@ -97,11 +97,14 @@ export class OCRService {
     }
 
     private parseLiveDate(text: string): string | null {
-        // Cari pola tanggal seperti "12 Jul", "12 July"
-        const match = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*/i);
+        // Cari pola tanggal seperti "12 Jul", "12 Jul 18:30", "12 July, 18:30"
+        const match = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
         if (match) {
             const day = parseInt(match[1], 10);
             const monthStr = match[2].toLowerCase();
+            const hourStr = match[3];
+            const minuteStr = match[4];
+
             const months: Record<string, number> = {
                 'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
                 'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
@@ -110,8 +113,14 @@ export class OCRService {
             if (month) {
                 const now = new Date();
                 let year = now.getFullYear();
-                if (month > now.getMonth() + 1) year -= 1; // Jika bulan OCR lebih besar dari bulan saat ini, asumsikan tahun lalu
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                if (month > now.getMonth() + 1) year -= 1;
+                
+                let timeStr = '00:00:00';
+                if (hourStr && minuteStr) {
+                    timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
+                }
+                
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}`;
             }
         }
         return null;
