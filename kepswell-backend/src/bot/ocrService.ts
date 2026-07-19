@@ -49,11 +49,11 @@ export class OCRService {
 
     private parseDurationMinutes(text: string): number {
         const patterns = [
-            // Handle 'j', 'jam', and OCR misreads like ')', ']', 'l', 'i'
-            { regex: /(\d+)\s*(?:jam\b|j\b|\)|\]|l\b|i\b)(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
-            { regex: /(\d+)\s*(?:mnt|menit)\b/i,                     type: 'menit' },
+            // Handle 'j', 'jam', 'h', 'hrs' and OCR misreads like ')', ']', 'l', 'i'
+            { regex: /(\d+)\s*(?:jam\b|j\b|h\b|hrs\b|\)|\]|l\b|i\b)(?:[,|\s]*(\d+)\s*(?:mnt|menit|m\b|min\b))?/i, type: 'jam' },
+            { regex: /(\d+)\s*(?:mnt|menit|m\b|min\b)/i,                     type: 'menit' },
             { regex: /(\d{1,2}):(\d{2}):(\d{2})/,                    type: 'hms' },
-            { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)\b/i,           type: 'menit' },
+            { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit|m\b|min\b)/i,           type: 'menit' },
         ];
 
         for (const p of patterns) {
@@ -97,21 +97,58 @@ export class OCRService {
     }
 
     private parseLiveDate(text: string): string | null {
-        // Cari pola tanggal seperti "12 Jul", "12 Jul 18:30", "12 July, 18:30"
-        const match = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
-        if (match) {
-            const day = parseInt(match[1], 10);
-            const monthStr = match[2].toLowerCase();
-            const hourStr = match[3];
-            const minuteStr = match[4];
+        const now = new Date();
+
+        // 1. Tanggal dengan Hari Ini / Kemarin (relatif)
+        const relativeMatch = text.match(/(Hari\s*ini|Kemarin|Today|Yesterday)(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
+        if (relativeMatch) {
+            const relText = relativeMatch[1].toLowerCase();
+            const hourStr = relativeMatch[2];
+            const minuteStr = relativeMatch[3];
+            
+            const targetDate = new Date(now);
+            if (relText.includes('kemarin') || relText.includes('yesterday')) {
+                targetDate.setDate(now.getDate() - 1);
+            }
+            
+            let timeStr = '00:00:00';
+            if (hourStr && minuteStr) {
+                timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
+            }
+            return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')} ${timeStr}`;
+        }
+
+        // 2. Format numerik DD/MM/YYYY atau DD-MM-YYYY (contoh: 12/07/2024 18:30)
+        const numericMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[\s,]*(\d{1,2})[:.](\d{2}))?/);
+        if (numericMatch) {
+            const day = parseInt(numericMatch[1], 10);
+            const month = parseInt(numericMatch[2], 10);
+            let year = parseInt(numericMatch[3], 10);
+            if (year < 100) year += 2000;
+            
+            let timeStr = '00:00:00';
+            if (numericMatch[4] && numericMatch[5]) {
+                timeStr = `${String(parseInt(numericMatch[4], 10)).padStart(2, '0')}:${String(parseInt(numericMatch[5], 10)).padStart(2, '0')}:00`;
+            }
+            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}`;
+            }
+        }
+
+        // 3. Format Teks seperti "12 Jul", "12 Agustus 18:30" (Dukungan Bulan Indonesia & Inggris)
+        const textMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
+        if (textMatch) {
+            const day = parseInt(textMatch[1], 10);
+            const monthStr = textMatch[2].toLowerCase();
+            const hourStr = textMatch[3];
+            const minuteStr = textMatch[4];
 
             const months: Record<string, number> = {
-                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-                'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'mei': 5, 'jun': 6,
+                'jul': 7, 'aug': 8, 'ags': 8, 'agu': 8, 'sep': 9, 'oct': 10, 'okt': 10, 'nov': 11, 'dec': 12, 'des': 12
             };
             const month = months[monthStr];
             if (month) {
-                const now = new Date();
                 let year = now.getFullYear();
                 if (month > now.getMonth() + 1) year -= 1;
                 
