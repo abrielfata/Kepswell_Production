@@ -115,7 +115,28 @@ export class OCRService {
             if (hourStr && minuteStr) {
                 timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
             }
-            return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')} ${timeStr}`;
+            return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')} ${timeStr}+07:00`;
+        }
+
+        // 1.5 Format TikTok spesifik: "10 Jul, 10.00.35 - 10 Jul, 12.00.32"
+        const tiktokRangeMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*-\s*/i);
+        if (tiktokRangeMatch) {
+            const day = parseInt(tiktokRangeMatch[1], 10);
+            const monthStr = tiktokRangeMatch[2].toLowerCase();
+            const hourStr = tiktokRangeMatch[3];
+            const minuteStr = tiktokRangeMatch[4];
+            
+            const months: Record<string, number> = {
+                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'mei': 5, 'jun': 6,
+                'jul': 7, 'aug': 8, 'ags': 8, 'agu': 8, 'sep': 9, 'oct': 10, 'okt': 10, 'nov': 11, 'dec': 12, 'des': 12
+            };
+            const month = months[monthStr];
+            if (month) {
+                let year = now.getFullYear();
+                if (month > now.getMonth() + 1) year -= 1;
+                const timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}+07:00`;
+            }
         }
 
         // 2. Format numerik DD/MM/YYYY atau DD-MM-YYYY (contoh: 12/07/2024 18:30)
@@ -131,7 +152,7 @@ export class OCRService {
                 timeStr = `${String(parseInt(numericMatch[4], 10)).padStart(2, '0')}:${String(parseInt(numericMatch[5], 10)).padStart(2, '0')}:00`;
             }
             if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}`;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}+07:00`;
             }
         }
 
@@ -157,7 +178,7 @@ export class OCRService {
                     timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
                 }
                 
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}`;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}+07:00`;
             }
         }
         return null;
