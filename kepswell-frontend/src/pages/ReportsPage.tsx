@@ -169,23 +169,7 @@ export default function ReportsPage() {
                             </Box>
                         ))}
 
-                        {selectedReport?.screenshot_url && (
-                            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                <Typography sx={{ fontSize: '0.8rem', color: '#6b7280' }}>Bukti Laporan</Typography>
-                                <Box
-                                    component="img"
-                                    src={selectedReport.screenshot_url}
-                                    alt="Screenshot Laporan"
-                                    sx={{
-                                        width: '100%',
-                                        maxHeight: '400px',
-                                        objectFit: 'contain',
-                                        borderRadius: 1,
-                                        border: '1px solid #e5e7eb'
-                                    }}
-                                />
-                            </Box>
-                        )}
+                        {/* Bukti Laporan dihapus sesuai permintaan */}
                     </Box>
                 </DialogContent>
                 <DialogActions>
