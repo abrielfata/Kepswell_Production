@@ -6,7 +6,6 @@ import { ENV } from '../config/env';
 import { HostService } from '../services/HostService';
 import { ReportService } from '../services/ReportService';
 import { OCRService } from './ocrService';
-import FormData from 'form-data';
 
 
 
@@ -85,33 +84,6 @@ export class TelegramBot {
         const savePath = path.join(uploadsDir, filename);
         fs.writeFileSync(savePath, imgRes.data);
         return filename;
-    }
-
-    /**
-     * Mengunggah gambar ke ImgBB. Jika gagal/key tidak ada, fallback ke URL lokal.
-     */
-    private async uploadToImgBB(localPath: string): Promise<string> {
-        if (!ENV.IMGBB_API_KEY) {
-            console.warn('⚠️ IMGBB_API_KEY belum di-set di .env. Menggunakan fallback URL lokal.');
-            return `${ENV.BACKEND_URL}/uploads/${path.basename(localPath)}`;
-        }
-        try {
-            const formData = new FormData();
-            formData.append('key', ENV.IMGBB_API_KEY);
-            formData.append('image', fs.createReadStream(localPath));
-
-            const res = await axios.post('https://api.imgbb.com/1/upload', formData, {
-                headers: formData.getHeaders()
-            });
-
-            if (res.data?.data?.url) {
-                return res.data.data.url;
-            }
-        } catch (err: any) {
-            console.error('❌ Gagal upload ke ImgBB:', err.message);
-        }
-        // Fallback to local url
-        return `${ENV.BACKEND_URL}/uploads/${path.basename(localPath)}`;
     }
 
 
@@ -292,8 +264,7 @@ export class TelegramBot {
             return;
         }
 
-        await this.sendMessage(chatId, '⏳ Mengunggah gambar ke cloud...');
-        const screenshotUrl = await this.uploadToImgBB(localPath);
+        const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
 
         this.pendingReports.set(telegramChatId, {
             host_id: host.id,

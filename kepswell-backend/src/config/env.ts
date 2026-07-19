@@ -13,5 +13,4 @@ export const ENV = {
     CHAT_ID_SALT: process.env.CHAT_ID_SALT!,
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY!,
     BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:5000',
-    IMGBB_API_KEY: process.env.IMGBB_API_KEY || '',
 };
