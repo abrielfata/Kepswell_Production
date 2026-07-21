@@ -98,10 +98,19 @@ export class OCRService {
     }
 
     private parseLiveDate(text: string): string | null {
+        // Fix OCR mistakes in time formats specifically (e.g., O7.10.14 or l0.0I.38)
+        const sanitizedText = text.replace(/(?:\b|(?<=\s))([0-9OoIilZzSs]{1,2})\s*[:.,]\s*([0-9OoIilZzSs]{2})(?:\s*[:.,]\s*([0-9OoIilZzSs]{2}))?(?=\b|\s)/g, (match) => {
+            return match
+                .replace(/[OoQ]/g, '0')
+                .replace(/[Iil|]/g, '1')
+                .replace(/[Zz]/g, '2')
+                .replace(/[Ss]/g, '5');
+        });
+
         const now = new Date();
 
         // 1. Tanggal dengan Hari Ini / Kemarin (relatif)
-        const relativeMatch = text.match(/(Hari\s*ini|Kemarin|Today|Yesterday)(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
+        const relativeMatch = sanitizedText.match(/(Hari\s*ini|Kemarin|Today|Yesterday)(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
         if (relativeMatch) {
             const relText = relativeMatch[1].toLowerCase();
             const hourStr = relativeMatch[2];
@@ -120,7 +129,7 @@ export class OCRService {
         }
 
         // 1.5 Format TikTok spesifik: "10 Jul, 10.00.35 - 10 Jul, 12.00.32"
-        const tiktokRangeMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[,\s]+(\d{1,2})\s*[:.,]\s*(\d{2})(?:\s*[:.,]\s*(\d{2}))?\s*-\s*/i);
+        const tiktokRangeMatch = sanitizedText.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[\s.,\-]+(\d{1,2})\s*[:.,]\s*(\d{2})(?:\s*[:.,]\s*(\d{2}))?\s*[-~_]+\s*/i);
         if (tiktokRangeMatch) {
             const day = parseInt(tiktokRangeMatch[1], 10);
             const monthStr = tiktokRangeMatch[2].toLowerCase();
@@ -141,7 +150,7 @@ export class OCRService {
         }
 
         // 2. Format numerik DD/MM/YYYY atau DD-MM-YYYY (contoh: 12/07/2024 18:30)
-        const numericMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[\s,]*(\d{1,2})[:.](\d{2}))?/);
+        const numericMatch = sanitizedText.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[\s.,\-]*(\d{1,2})\s*[:.,]\s*(\d{2}))?/);
         if (numericMatch) {
             const day = parseInt(numericMatch[1], 10);
             const month = parseInt(numericMatch[2], 10);
@@ -158,7 +167,7 @@ export class OCRService {
         }
 
         // 3. Format Teks seperti "12 Jul", "12 Agustus 18:30" (Dukungan Bulan Indonesia & Inggris)
-        const textMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\s,]*(\d{1,2})\s*[:.,]\s*(\d{2}))?/i);
+        const textMatch = sanitizedText.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\s.,\-]*(\d{1,2})\s*[:.,]\s*(\d{2}))?/i);
         if (textMatch) {
             const day = parseInt(textMatch[1], 10);
             const monthStr = textMatch[2].toLowerCase();
