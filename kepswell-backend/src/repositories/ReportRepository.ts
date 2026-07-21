@@ -241,9 +241,9 @@ export class ReportRepository {
         let idx = 1;
 
         if (filters.startDate && filters.endDate) {
-            conditions.push(`created_at >= $${idx++}`);
+            conditions.push(`COALESCE(live_date, created_at) >= $${idx++}`);
             params.push(`${filters.startDate} 00:00:00`);
-            conditions.push(`created_at <= $${idx++}`);
+            conditions.push(`COALESCE(live_date, created_at) <= $${idx++}`);
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
@@ -254,12 +254,12 @@ export class ReportRepository {
 
         const sql = `
             SELECT 
-                TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as date,
+                TO_CHAR(DATE(COALESCE(live_date, created_at)), 'YYYY-MM-DD') as date,
                 COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN reported_gmv ELSE 0 END), 0) as total_gmv
             FROM reports
             ${where}
-            GROUP BY DATE(created_at)
-            ORDER BY DATE(created_at) ASC
+            GROUP BY DATE(COALESCE(live_date, created_at))
+            ORDER BY DATE(COALESCE(live_date, created_at)) ASC
         `;
 
         const result = await query(sql, params);
