@@ -200,10 +200,10 @@ export class WebClient {
                 return hours + additional;
             };
 
-            data.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            data.sort((a: any, b: any) => new Date(a.live_date || a.created_at).getTime() - new Date(b.live_date || b.created_at).getTime());
 
             data.forEach((r: any) => {
-                const dateObj = new Date(r.created_at);
+                const dateObj = new Date(r.live_date || r.created_at);
                 const day   = String(dateObj.getDate()).padStart(2, '0');
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const year  = dateObj.getFullYear();
@@ -238,7 +238,7 @@ export class WebClient {
                     const durationH = calcShiftDuration(Number(r.live_duration_minutes || 0));
                     const durStr    = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
 
-                    const end   = new Date(r.created_at);
+                    const end   = new Date(r.live_date || r.created_at);
                     const start = new Date(end.getTime() - Number(r.live_duration_minutes || 0) * 60000);
                     
                     const startH = String(start.getHours()).padStart(2, '0');
