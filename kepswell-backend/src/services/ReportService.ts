@@ -53,6 +53,7 @@ export class ReportService {
                 gmv:       Number(report.reported_gmv),
                 pesanan_sku: Number(report.reported_pesanan_sku),
                 duration:  Number(report.live_duration_minutes),
+                live_date: report.live_date,
             }).catch(err => console.error('Notifikasi gagal:', err.message));
         }
 
