@@ -243,6 +243,28 @@ export class TelegramBot {
             return;
         }
 
+        let isAnomaly = false;
+        let anomalyReason = '';
+
+        if (ocr.parsedGMV > 0 && ocr.parsedDurationMinutes === 0) {
+            isAnomaly = true;
+            anomalyReason = "GMV > 0 tapi durasi 0";
+        } else if (ocr.parsedGMV > 0 && ocr.parsedPesananSKU === 0) {
+            isAnomaly = true;
+            anomalyReason = "GMV > 0 tapi pesanan (SKU) 0";
+        } else if (ocr.parsedPesananSKU > 0 && ocr.parsedGMV === 0) {
+            isAnomaly = true;
+            anomalyReason = "Ada pesanan (SKU > 0) tapi GMV 0";
+        } else if (ocr.parsedPesananSKU > 0 && ocr.parsedDurationMinutes === 0) {
+            isAnomaly = true;
+            anomalyReason = "Ada pesanan (SKU > 0) tapi durasi 0";
+        }
+
+        if (isAnomaly) {
+            await this.sendMessage(chatId, `⚠️ *Laporan Ditolak*\nTerdeteksi anomali pada data: *${anomalyReason}*.\n\nPastikan screenshot yang Anda kirim adalah laporan yang benar dan jelas.`);
+            return;
+        }
+
         const gmvFormatted = new Intl.NumberFormat('id-ID', {
             style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
         }).format(ocr.parsedGMV);

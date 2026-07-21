@@ -211,12 +211,7 @@ export class OCRService {
             const parsedDurationMinutes = this.parseDurationMinutes(rawText);
             const parsedLiveDate = this.parseLiveDate(rawText);
 
-            // DEBUG LOG — hapus setelah masalah selesai
-            console.log('=== OCR RAW TEXT ===');
-            console.log(rawText);
-            console.log('=== PARSED ===');
-            console.log('GMV:', parsedGMV, '| Pesanan SKU:', parsedPesananSKU, '| Durasi (mnt):', parsedDurationMinutes, '| Live Date:', parsedLiveDate);
-            console.log('====================');
+
 
             return {
                 success:               true,
