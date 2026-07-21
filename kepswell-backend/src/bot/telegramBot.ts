@@ -298,11 +298,23 @@ export class TelegramBot {
             screenshotUrl,
         });
 
+        let liveDateText = "Tidak terdeteksi (Sistem: Hari Ini)";
+        if (ocr.parsedLiveDate) {
+            const d = new Date(ocr.parsedLiveDate);
+            if (!isNaN(d.getTime())) {
+                liveDateText = new Intl.DateTimeFormat('id-ID', {
+                    day: '2-digit', month: 'long', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
+                }).format(d).replace(/\./g, ':');
+            }
+        }
+
         await this.sendMessage(chatId,
             `✅ *Screenshot Diproses!*\n\n` +
             `GMV      : ${gmvFormatted}\n` +
             `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
-            `Durasi   : ${durasiText}\n\n` +
+            `Durasi   : ${durasiText}\n` +
+            `Waktu    : ${liveDateText}\n\n` +
             `Ketik *Y* untuk simpan atau *N* untuk batal.`
         );
     }
