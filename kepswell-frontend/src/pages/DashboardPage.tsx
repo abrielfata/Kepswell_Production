@@ -8,6 +8,7 @@ import DateRangeFilter from '../components/DateRangeFilter';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDuration } from '../utils/format';
+import dayjs from 'dayjs';
 
 
 const STAT_ITEMS = [
@@ -19,7 +20,14 @@ const STAT_ITEMS = [
 ] as const;
 
 export default function DashboardPage() {
-    const [dateFilter, setDateFilter] = useState<{ preset?: string, startDate?: string, endDate?: string }>({});
+    const [dateFilter, setDateFilter] = useState<{ preset?: string, startDate?: string, endDate?: string }>(() => {
+        const d = dayjs();
+        return {
+            preset: d.format('YYYY-MM'),
+            startDate: d.startOf('month').format('YYYY-MM-DD'),
+            endDate: d.endOf('month').format('YYYY-MM-DD')
+        };
+    });
 
     const monthParams = {
         startDate: dateFilter.startDate,
