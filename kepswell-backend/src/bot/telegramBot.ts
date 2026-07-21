@@ -278,7 +278,19 @@ export class TelegramBot {
         }
 
         if (isAnomaly) {
-            await this.sendMessage(chatId, `⚠️ *Laporan Ditolak*\nTerdeteksi anomali pada data: *${anomalyReason}*.\n\nPastikan screenshot yang Anda kirim adalah laporan yang benar dan jelas.`);
+            const gmvFmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(ocr.parsedGMV);
+            const durFmt = ocr.parsedDurationMinutes > 0 ? `${Math.floor(ocr.parsedDurationMinutes / 60)}j ${ocr.parsedDurationMinutes % 60}m` : '0j 0m';
+            const dateFmt = formatLiveDate(ocr.parsedLiveDate);
+            
+            await this.sendMessage(chatId, 
+                `⚠️ *Laporan Ditolak*\nTerdeteksi anomali pada data: *${anomalyReason}*\n\n` +
+                `*Data yang terbaca oleh sistem:*\n` +
+                `GMV      : ${gmvFmt}\n` +
+                `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
+                `Durasi   : ${durFmt}\n` +
+                `Waktu    : ${dateFmt}\n\n` +
+                `Pastikan screenshot yang Anda kirim adalah laporan yang benar dan jelas.`
+            );
             return;
         }
 

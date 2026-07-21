@@ -70,7 +70,8 @@ export class OCRService {
         const clean = text.replace(/\s+/g, ' ').trim();
 
         // Format Baru: Produk terjual di LIVE 3
-        const terjualMatch = clean.match(/Produk\s+terjual\s+di\s+LIVE\s+(\d+)/i);
+        // Diperluas agar bisa menangkap "terjual di LIVE18" (tanpa spasi), atau "terjual di LVE 18"
+        const terjualMatch = clean.match(/terjual\s*di\s*[a-z]*\s*(\d+)/i);
         if (terjualMatch) return parseInt(terjualMatch[1], 10);
 
         // Prioritas 1: GMV dengan suffix K diikuti LANGSUNG angka (dengan/tanpa spasi)
