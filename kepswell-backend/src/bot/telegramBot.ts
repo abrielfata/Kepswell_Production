@@ -16,6 +16,17 @@ export interface NotifyStatusParams {
     gmv: number;
     pesanan_sku: number;
     duration: number;
+    live_date?: string | null;
+}
+
+function formatLiveDate(liveDateStr?: string | Date | null): string {
+    if (!liveDateStr) return "Tidak terdeteksi (Sistem: Hari Ini)";
+    const d = new Date(liveDateStr);
+    if (isNaN(d.getTime())) return "Tidak terdeteksi (Sistem: Hari Ini)";
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
+    }).format(d).replace(/\./g, ':');
 }
 
 
@@ -97,6 +108,7 @@ export class TelegramBot {
         }).format(params.gmv);
 
         const durasiText = `${Math.floor(params.duration / 60)}j ${params.duration % 60}m`;
+        const liveDateText = formatLiveDate(params.live_date);
 
         if (params.status === 'APPROVED') {
             await this.sendMessage(
@@ -105,6 +117,7 @@ export class TelegramBot {
                 `GMV      : ${gmvFormatted}\n` +
                 `Pesanan  : ${params.pesanan_sku} SKU\n` +
                 `Durasi   : ${durasiText}\n` +
+                `Waktu    : ${liveDateText}\n` +
                 `\n\nTerima kasih! Data Anda telah dicatat. 🎉`
             );
         } else {
@@ -114,6 +127,7 @@ export class TelegramBot {
                 `GMV      : ${gmvFormatted}\n` +
                 `Pesanan  : ${params.pesanan_sku} SKU\n` +
                 `Durasi   : ${durasiText}\n` +
+                `Waktu    : ${liveDateText}\n` +
                 `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`
             );
         }
@@ -192,11 +206,14 @@ export class TelegramBot {
                 style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
             }).format(pending.gmv);
 
+            const liveDateText = formatLiveDate(pending.liveDate);
+
             await this.sendMessage(chatId,
                 `✅ *Laporan Tersimpan!*\n\n` +
                 `GMV      : ${gmvFormatted}\n` +
                 `Pesanan  : ${pending.pesanan_sku} SKU\n` +
-                `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n\n` +
+                `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n` +
+                `Waktu    : ${liveDateText}\n\n` +
                 `Status: *PENDING* — menunggu verifikasi manager.`
             );
         } else if (response === 'N' || response === 'TIDAK') {
@@ -298,16 +315,7 @@ export class TelegramBot {
             screenshotUrl,
         });
 
-        let liveDateText = "Tidak terdeteksi (Sistem: Hari Ini)";
-        if (ocr.parsedLiveDate) {
-            const d = new Date(ocr.parsedLiveDate);
-            if (!isNaN(d.getTime())) {
-                liveDateText = new Intl.DateTimeFormat('id-ID', {
-                    day: '2-digit', month: 'long', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
-                }).format(d).replace(/\./g, ':');
-            }
-        }
+        const liveDateText = formatLiveDate(ocr.parsedLiveDate);
 
         await this.sendMessage(chatId,
             `✅ *Screenshot Diproses!*\n\n` +
