@@ -120,7 +120,7 @@ export class OCRService {
         }
 
         // 1.5 Format TikTok spesifik: "10 Jul, 10.00.35 - 10 Jul, 12.00.32"
-        const tiktokRangeMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*-\s*/i);
+        const tiktokRangeMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[,\s]+(\d{1,2})\s*[:.,]\s*(\d{2})(?:\s*[:.,]\s*(\d{2}))?\s*-\s*/i);
         if (tiktokRangeMatch) {
             const day = parseInt(tiktokRangeMatch[1], 10);
             const monthStr = tiktokRangeMatch[2].toLowerCase();
@@ -158,7 +158,7 @@ export class OCRService {
         }
 
         // 3. Format Teks seperti "12 Jul", "12 Agustus 18:30" (Dukungan Bulan Indonesia & Inggris)
-        const textMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
+        const textMatch = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\s,]*(\d{1,2})\s*[:.,]\s*(\d{2}))?/i);
         if (textMatch) {
             const day = parseInt(textMatch[1], 10);
             const monthStr = textMatch[2].toLowerCase();
