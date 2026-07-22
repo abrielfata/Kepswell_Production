@@ -174,6 +174,17 @@ export class TelegramBot {
 
         if (response === 'Y' || response === 'YA') {
             const now = new Date();
+            let targetMonth = now.getMonth() + 1;
+            let targetYear = now.getFullYear();
+
+            if (pending.liveDate) {
+                const liveDateObj = new Date(pending.liveDate);
+                if (!isNaN(liveDateObj.getTime())) {
+                    targetMonth = liveDateObj.getMonth() + 1;
+                    targetYear = liveDateObj.getFullYear();
+                }
+            }
+
             await this.reportService.recordNewReport({
                 host_id: pending.host_id,
                 reported_gmv: pending.gmv,
@@ -182,8 +193,8 @@ export class TelegramBot {
                 screenshot_url: pending.screenshotUrl,
                 ocr_raw_text: pending.rawText,
                 live_date: pending.liveDate || null,
-                month: now.getMonth() + 1,
-                year: now.getFullYear(),
+                month: targetMonth,
+                year: targetYear,
             });
 
             this.pendingReports.delete(telegramChatId);

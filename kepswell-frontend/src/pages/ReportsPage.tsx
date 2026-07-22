@@ -43,7 +43,7 @@ export default function ReportsPage() {
     const { reports, total, updateStatus, isPending, isLoading } = useReports(params);
     const navigate = useNavigate();
     const { showNotification } = useNotification();
-    const webClient = new WebClient(navigate, showNotification, undefined, () => {});
+    const webClient = new WebClient(navigate, showNotification, undefined, () => { });
 
     return (
         <Box>

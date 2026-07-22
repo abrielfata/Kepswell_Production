@@ -75,33 +75,6 @@ export class HostRepository {
         });
     }
 
-    async update(id: number, data: Partial<{
-        full_name: string;
-        telegram_chat_id: string | null;
-    }>): Promise<Host | null> {
-        const fields: string[] = [];
-        const params: unknown[] = [];
-        let idx = 1;
-
-        if (data.full_name !== undefined) {
-            fields.push(`full_name = $${idx++}`);
-            params.push(data.full_name);
-        }
-        if (data.telegram_chat_id !== undefined) {
-            fields.push(`telegram_chat_id = $${idx++}`);
-            params.push(data.telegram_chat_id);
-        }
-
-        if (fields.length === 0) return null;
-
-        params.push(id);
-        const result = await query(
-            `UPDATE hosts SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $${idx} RETURNING *`,
-            params
-        );
-        return mapHostRow(result.rows[0]);
-    }
 
     async deactivateHostRecord(id: number): Promise<boolean> {
         await query('DELETE FROM host_registration_codes WHERE host_id = $1 AND used_at IS NULL', [id]);
