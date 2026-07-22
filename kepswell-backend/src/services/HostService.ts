@@ -97,21 +97,6 @@ export class HostService {
         return { ...host, pending_registration_code: code };
     }
 
-    async update(id: number, data: { full_name?: string }) {
-        const existing = await this.hostRepo.findById(id);
-        if (!existing) throw new AppError('Host tidak ditemukan', 404);
-
-        if (data.full_name !== undefined) {
-            if (!data.full_name.trim()) {
-                throw new AppError('Nama lengkap wajib diisi', 400);
-            }
-            const normalized = this.normalizeHostName(data.full_name);
-            this.validateHostName(normalized);
-            data.full_name = normalized;
-        }
-
-        return this.hostRepo.update(id, data);
-    }
 
     private async findHostOrFail(id: number) {
         const existing = await this.hostRepo.findById(id);

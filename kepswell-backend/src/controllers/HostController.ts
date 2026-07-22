@@ -34,14 +34,6 @@ export class HostController {
         }
     };
 
-    update = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const host = await this.hostService.update(Number(req.params.id), req.body);
-            return res.status(200).json({ success: true, data: host });
-        } catch (err) {
-            next(err);
-        }
-    };
 
     delete = async (req: Request, res: Response, next: NextFunction) => {
         try {
