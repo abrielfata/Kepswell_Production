@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../contexts/NotificationContext';
 import { WebClient } from '../api/WebClient';
 import DateRangeFilter from '../components/DateRangeFilter';
+import dayjs from 'dayjs';
 
 const STATUS_COLOR: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
     APPROVED: 'success',
@@ -30,7 +31,14 @@ export default function ReportsPage() {
     const [page, setPage] = useState(0);
     const [rowsPerPage] = useState(10);
     const [statusFilter, setStatusFilter] = useState('');
-    const [dateFilter, setDateFilter] = useState<{ preset?: string, startDate?: string, endDate?: string }>({});
+    const [dateFilter, setDateFilter] = useState<{ preset?: string, startDate?: string, endDate?: string }>(() => {
+        const d = dayjs();
+        return {
+            preset: d.format('YYYY-MM'),
+            startDate: d.startOf('month').format('YYYY-MM-DD'),
+            endDate: d.endOf('month').format('YYYY-MM-DD')
+        };
+    });
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
     const params = {
@@ -73,7 +81,7 @@ export default function ReportsPage() {
 
                     <Button variant="outlined" sx={{ height: 40 }}
                         onClick={() => webClient.handleExportReports(params)}>
-                        Export CSV
+                        Export Excel
                     </Button>
                 </Stack>
             </Box>
@@ -120,7 +128,7 @@ export default function ReportsPage() {
                                             <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
                                                 {r.user_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
                                             </TableCell>
-                                            <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.created_at)}</TableCell>
+                                            <TableCell sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDateTime(r.live_date || r.created_at)}</TableCell>
                                             <TableCell>
                                                 {r.status === 'PENDING' && (
                                                     <Button size="small" variant="outlined"
@@ -169,7 +177,7 @@ export default function ReportsPage() {
                             </Box>
                         ))}
 
-
+                        {/* Bukti Laporan dihapus sesuai permintaan */}
                     </Box>
                 </DialogContent>
                 <DialogActions>

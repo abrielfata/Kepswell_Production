@@ -49,11 +49,11 @@ export class OCRService {
 
     private parseDurationMinutes(text: string): number {
         const patterns = [
-            // Handle 'j', 'jam', and OCR misreads like ')', ']', 'l', 'i'
-            { regex: /(\d+)\s*(?:jam\b|j\b|\)|\]|l\b|i\b)(?:[,|\s]*(\d+)\s*(?:mnt|menit)\b)?/i, type: 'jam' },
-            { regex: /(\d+)\s*(?:mnt|menit)\b/i,                     type: 'menit' },
+            // Handle 'j', 'jam', 'h', 'hrs' and OCR misreads like ')', ']', 'l', 'i'
+            { regex: /(\d+)\s*(?:jam\b|j\b|h\b|hrs\b|\)|\]|l\b|i\b)(?:[,|\s]*(\d+)\s*(?:mnt|menit|m\b|min\b))?/i, type: 'jam' },
+            { regex: /(\d+)\s*(?:mnt|menit|m\b|min\b)/i,                     type: 'menit' },
             { regex: /(\d{1,2}):(\d{2}):(\d{2})/,                    type: 'hms' },
-            { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit)\b/i,           type: 'menit' },
+            { regex: /durasi[:\s]+(\d+)\s*(?:mnt|menit|m\b|min\b)/i,           type: 'menit' },
         ];
 
         for (const p of patterns) {
@@ -70,7 +70,8 @@ export class OCRService {
         const clean = text.replace(/\s+/g, ' ').trim();
 
         // Format Baru: Produk terjual di LIVE 3
-        const terjualMatch = clean.match(/Produk\s+terjual\s+di\s+LIVE\s+(\d+)/i);
+        // Diperluas agar bisa menangkap "terjual di LIVE18" (tanpa spasi), atau "terjual di LVE 18"
+        const terjualMatch = clean.match(/terjual\s*di\s*[a-z]*\s*(\d+)/i);
         if (terjualMatch) return parseInt(terjualMatch[1], 10);
 
         // Prioritas 1: GMV dengan suffix K diikuti LANGSUNG angka (dengan/tanpa spasi)
@@ -109,13 +110,12 @@ export class OCRService {
             const day = parseInt(match[1], 10);
             const monthStr = match[2].toLowerCase();
             const months: Record<string, number> = {
-                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-                'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'mei': 5, 'jun': 6,
+                'jul': 7, 'aug': 8, 'ags': 8, 'agu': 8, 'sep': 9, 'oct': 10, 'okt': 10, 'nov': 11, 'dec': 12, 'des': 12
             };
             const month = months[monthStr];
             
             if (month) {
-                const now = new Date();
                 let year = now.getFullYear();
                 if (month > now.getMonth() + 1) year -= 1; // Jika bulan OCR lebih besar dari bulan saat ini, asumsikan tahun lalu
                 
@@ -161,12 +161,7 @@ export class OCRService {
             const parsedDurationMinutes = this.parseDurationMinutes(rawText);
             const parsedLiveDate = this.parseLiveDate(rawText);
 
-            // DEBUG LOG — hapus setelah masalah selesai
-            console.log('=== OCR RAW TEXT ===');
-            console.log(rawText);
-            console.log('=== PARSED ===');
-            console.log('GMV:', parsedGMV, '| Pesanan SKU:', parsedPesananSKU, '| Durasi (mnt):', parsedDurationMinutes, '| Live Date:', parsedLiveDate);
-            console.log('====================');
+
 
             return {
                 success:               true,
