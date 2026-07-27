@@ -40,7 +40,7 @@ export class ReportRepository {
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-        const page  = filters.page  || 1;
+        const page = filters.page || 1;
         const limit = filters.limit || 10;
         const offset = (page - 1) * limit;
 
@@ -79,10 +79,10 @@ export class ReportRepository {
     }
 
     async checkDuplicate(
-        hostId: number, 
-        gmv: number, 
-        pesananSku: number, 
-        duration: number, 
+        hostId: number,
+        gmv: number,
+        pesananSku: number,
+        duration: number,
         liveDate: string | null
     ): Promise<boolean> {
         let sql = '';
@@ -98,9 +98,15 @@ export class ReportRepository {
                   AND reported_pesanan_sku = $${paramIdx++}
             `;
             params.push(gmv, pesananSku);
-            
+
             if (liveDate) {
-                sql += ` AND live_date = $${paramIdx++}`;
+                // Jika OCR berhasil mendapatkan jam (panjang string > 10), cek jarak waktu < 1 jam (3600 detik)
+                // Jika hanya tanggal, fallback ke cek DATE() saja
+                if (liveDate.length > 10) {
+                    sql += ` AND ABS(EXTRACT(EPOCH FROM (live_date::timestamp - $${paramIdx++}::timestamp))) < 3600`;
+                } else {
+                    sql += ` AND DATE(live_date) = DATE($${paramIdx++})`;
+                }
                 params.push(liveDate);
             } else {
                 sql += ` AND DATE(created_at) = CURRENT_DATE`;
@@ -118,7 +124,11 @@ export class ReportRepository {
             params.push(hostId, gmv, pesananSku, duration);
 
             if (liveDate) {
-                sql += ` AND live_date = $${paramIdx++}`;
+                if (liveDate.length > 10) {
+                    sql += ` AND ABS(EXTRACT(EPOCH FROM (live_date::timestamp - $${paramIdx++}::timestamp))) < 3600`;
+                } else {
+                    sql += ` AND DATE(live_date) = DATE($${paramIdx++})`;
+                }
                 params.push(liveDate);
             } else {
                 sql += ` AND DATE(created_at) = CURRENT_DATE`;
@@ -126,7 +136,7 @@ export class ReportRepository {
         }
 
         sql += ` LIMIT 1`;
-        
+
         const result = await query(sql, params);
         return (result.rowCount ?? 0) > 0;
     }
@@ -180,7 +190,7 @@ export class ReportRepository {
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
-            if (filters.year)  { conditions.push(`year = $${idx++}`);  params.push(filters.year); }
+            if (filters.year) { conditions.push(`year = $${idx++}`); params.push(filters.year); }
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -210,7 +220,7 @@ export class ReportRepository {
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`r.month = $${idx++}`); params.push(filters.month); }
-            if (filters.year)  { conditions.push(`r.year = $${idx++}`);  params.push(filters.year); }
+            if (filters.year) { conditions.push(`r.year = $${idx++}`); params.push(filters.year); }
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -270,7 +280,7 @@ export class ReportRepository {
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
-            if (filters.year)  { conditions.push(`year = $${idx++}`);  params.push(filters.year); }
+            if (filters.year) { conditions.push(`year = $${idx++}`); params.push(filters.year); }
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
