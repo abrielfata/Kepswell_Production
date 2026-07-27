@@ -116,6 +116,7 @@ export class OCRService {
             const month = months[monthStr];
             
             if (month) {
+                const now = new Date();
                 let year = now.getFullYear();
                 if (month > now.getMonth() + 1) year -= 1; // Jika bulan OCR lebih besar dari bulan saat ini, asumsikan tahun lalu
                 
