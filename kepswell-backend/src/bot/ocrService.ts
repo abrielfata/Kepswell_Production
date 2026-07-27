@@ -98,97 +98,37 @@ export class OCRService {
     }
 
     private parseLiveDate(text: string): string | null {
-        // Fix OCR mistakes in time formats specifically (e.g., O7.10.14 or l0.0I.38)
-        const sanitizedText = text.replace(/(?:\b|(?<=\s))([0-9OoIilZzSs]{1,2})\s*[:.,]\s*([0-9OoIilZzSs]{2})(?:\s*[:.,]\s*([0-9OoIilZzSs]{2}))?(?=\b|\s)/g, (match) => {
-            return match
-                .replace(/[OoQ]/g, '0')
-                .replace(/[Iil|]/g, '1')
-                .replace(/[Zz]/g, '2')
-                .replace(/[Ss]/g, '5');
-        });
+        // Cari pola tanggal dengan jam, contoh: "8 Jul, 19.15" atau "8 Jul 19:15"
+        const matchWithTime = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+(\d{1,2})[.:](\d{2})/i);
+        
+        // Cari pola tanggal saja
+        const matchDateOnly = text.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*/i);
 
-        const now = new Date();
+        const match = matchWithTime || matchDateOnly;
 
-        // 1. Tanggal dengan Hari Ini / Kemarin (relatif)
-        const relativeMatch = sanitizedText.match(/(Hari\s*ini|Kemarin|Today|Yesterday)(?:[\s,]*(\d{1,2})[:.](\d{2}))?/i);
-        if (relativeMatch) {
-            const relText = relativeMatch[1].toLowerCase();
-            const hourStr = relativeMatch[2];
-            const minuteStr = relativeMatch[3];
-            
-            const targetDate = new Date(now);
-            if (relText.includes('kemarin') || relText.includes('yesterday')) {
-                targetDate.setDate(now.getDate() - 1);
-            }
-            
-            let timeStr = '00:00:00';
-            if (hourStr && minuteStr) {
-                timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
-            }
-            return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')} ${timeStr}+07:00`;
-        }
-
-        // 1.5 Format TikTok spesifik: "10 Jul, 10.00.35 - 10 Jul, 12.00.32"
-        const tiktokRangeMatch = sanitizedText.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[\s.,\-]+(\d{1,2})\s*[:.,]*\s*(\d{2})(?:\s*[:.,]*\s*(\d{2}))?\s*[-~_]+\s*/i);
-        if (tiktokRangeMatch) {
-            const day = parseInt(tiktokRangeMatch[1], 10);
-            const monthStr = tiktokRangeMatch[2].toLowerCase();
-            const hourStr = tiktokRangeMatch[3];
-            const minuteStr = tiktokRangeMatch[4];
-            
+        if (match) {
+            const day = parseInt(match[1], 10);
+            const monthStr = match[2].toLowerCase();
             const months: Record<string, number> = {
                 'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'mei': 5, 'jun': 6,
                 'jul': 7, 'aug': 8, 'ags': 8, 'agu': 8, 'sep': 9, 'oct': 10, 'okt': 10, 'nov': 11, 'dec': 12, 'des': 12
             };
             const month = months[monthStr];
-            if (month) {
-                let year = now.getFullYear();
-                if (month > now.getMonth() + 1) year -= 1;
-                const timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}+07:00`;
-            }
-        }
-
-        // 2. Format numerik DD/MM/YYYY atau DD-MM-YYYY (contoh: 12/07/2024 18:30)
-        const numericMatch = sanitizedText.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[\s.,\-]*(\d{1,2})\s*[:.,]*\s*(\d{2}))?/);
-        if (numericMatch) {
-            const day = parseInt(numericMatch[1], 10);
-            const month = parseInt(numericMatch[2], 10);
-            let year = parseInt(numericMatch[3], 10);
-            if (year < 100) year += 2000;
             
-            let timeStr = '00:00:00';
-            if (numericMatch[4] && numericMatch[5]) {
-                timeStr = `${String(parseInt(numericMatch[4], 10)).padStart(2, '0')}:${String(parseInt(numericMatch[5], 10)).padStart(2, '0')}:00`;
-            }
-            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}+07:00`;
-            }
-        }
-
-        // 3. Format Teks seperti "12 Jul", "12 Agustus 18:30" (Dukungan Bulan Indonesia & Inggris)
-        const textMatch = sanitizedText.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\s.,\-]*(\d{1,2})\s*[:.,]*\s*(\d{2}))?/i);
-        if (textMatch) {
-            const day = parseInt(textMatch[1], 10);
-            const monthStr = textMatch[2].toLowerCase();
-            const hourStr = textMatch[3];
-            const minuteStr = textMatch[4];
-
-            const months: Record<string, number> = {
-                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'mei': 5, 'jun': 6,
-                'jul': 7, 'aug': 8, 'ags': 8, 'agu': 8, 'sep': 9, 'oct': 10, 'okt': 10, 'nov': 11, 'dec': 12, 'des': 12
-            };
-            const month = months[monthStr];
             if (month) {
                 let year = now.getFullYear();
-                if (month > now.getMonth() + 1) year -= 1;
+                if (month > now.getMonth() + 1) year -= 1; // Jika bulan OCR lebih besar dari bulan saat ini, asumsikan tahun lalu
                 
-                let timeStr = '00:00:00';
-                if (hourStr && minuteStr) {
-                    timeStr = `${String(parseInt(hourStr, 10)).padStart(2, '0')}:${String(parseInt(minuteStr, 10)).padStart(2, '0')}:00`;
+                const datePart = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                // Jika regex pertama (dengan jam) yang cocok, match[3] adalah jam dan match[4] adalah menit
+                if (matchWithTime && match[3] && match[4]) {
+                    const hour = match[3].padStart(2, '0');
+                    const minute = match[4].padStart(2, '0');
+                    return `${datePart} ${hour}:${minute}:00`;
                 }
-                
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${timeStr}+07:00`;
+
+                return datePart; // Hanya tanggal
             }
         }
         return null;

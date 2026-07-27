@@ -40,7 +40,7 @@ export class ReportRepository {
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-        const page  = filters.page  || 1;
+        const page = filters.page || 1;
         const limit = filters.limit || 10;
         const offset = (page - 1) * limit;
 
@@ -79,30 +79,64 @@ export class ReportRepository {
     }
 
     async checkDuplicate(
-        hostId: number, 
-        gmv: number, 
-        pesananSku: number, 
-        duration: number, 
+        hostId: number,
+        gmv: number,
+        pesananSku: number,
+        duration: number,
         liveDate: string | null
     ): Promise<boolean> {
-        // Pengecekan Global: Tidak memfilter berdasarkan host_id agar bisa
-        // menangkap jika ada host B yang mencuri screenshot host A.
-        let sql = `
-            SELECT 1 FROM reports
-            WHERE reported_gmv = $1
-              AND reported_pesanan_sku = $2
-              AND live_duration_minutes = $3
-              AND status != 'REJECTED'
-        `;
-        const params: any[] = [gmv, pesananSku, duration];
-        
-        if (liveDate) {
-            sql += ` AND live_date = $4`;
-            params.push(liveDate);
+        let sql = '';
+        const params: any[] = [];
+        let paramIdx = 1;
+
+        if (gmv > 0) {
+            // Jika GMV > 0, kita lebih agresif mencegah duplikat (termasuk beda host/curi screenshot).
+            // Durasi diabaikan karena OCR sering tidak konsisten membacanya.
+            sql = `
+                SELECT 1 FROM reports
+                WHERE reported_gmv = $${paramIdx++}
+                  AND reported_pesanan_sku = $${paramIdx++}
+            `;
+            params.push(gmv, pesananSku);
+
+            if (liveDate) {
+                // Jika OCR berhasil mendapatkan jam (panjang string > 10), cek jarak waktu < 1 jam (3600 detik)
+                // Jika hanya tanggal, fallback ke cek DATE() saja
+                if (liveDate.length > 10) {
+                    sql += ` AND ABS(EXTRACT(EPOCH FROM (live_date::timestamp - $${paramIdx++}::timestamp))) < 3600`;
+                } else {
+                    sql += ` AND DATE(live_date) = DATE($${paramIdx++})`;
+                }
+                params.push(liveDate);
+            } else {
+                sql += ` AND DATE(created_at) = CURRENT_DATE`;
+            }
+        } else {
+            // Jika GMV 0, wajar banyak host memiliki laporan yang sama (0 GMV, 0 SKU).
+            // Harus cek spesifik host_id dan durasi.
+            sql = `
+                SELECT 1 FROM reports
+                WHERE host_id = $${paramIdx++}
+                  AND reported_gmv = $${paramIdx++}
+                  AND reported_pesanan_sku = $${paramIdx++}
+                  AND live_duration_minutes = $${paramIdx++}
+            `;
+            params.push(hostId, gmv, pesananSku, duration);
+
+            if (liveDate) {
+                if (liveDate.length > 10) {
+                    sql += ` AND ABS(EXTRACT(EPOCH FROM (live_date::timestamp - $${paramIdx++}::timestamp))) < 3600`;
+                } else {
+                    sql += ` AND DATE(live_date) = DATE($${paramIdx++})`;
+                }
+                params.push(liveDate);
+            } else {
+                sql += ` AND DATE(created_at) = CURRENT_DATE`;
+            }
         }
-        
+
         sql += ` LIMIT 1`;
-        
+
         const result = await query(sql, params);
         return (result.rowCount ?? 0) > 0;
     }
@@ -156,7 +190,7 @@ export class ReportRepository {
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
-            if (filters.year)  { conditions.push(`year = $${idx++}`);  params.push(filters.year); }
+            if (filters.year) { conditions.push(`year = $${idx++}`); params.push(filters.year); }
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -186,7 +220,7 @@ export class ReportRepository {
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`r.month = $${idx++}`); params.push(filters.month); }
-            if (filters.year)  { conditions.push(`r.year = $${idx++}`);  params.push(filters.year); }
+            if (filters.year) { conditions.push(`r.year = $${idx++}`); params.push(filters.year); }
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -246,7 +280,7 @@ export class ReportRepository {
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
-            if (filters.year)  { conditions.push(`year = $${idx++}`);  params.push(filters.year); }
+            if (filters.year) { conditions.push(`year = $${idx++}`); params.push(filters.year); }
         }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
