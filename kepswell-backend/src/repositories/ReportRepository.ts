@@ -85,23 +85,46 @@ export class ReportRepository {
         duration: number, 
         liveDate: string | null
     ): Promise<boolean> {
-        let sql = `
-            SELECT 1 FROM reports
-            WHERE host_id = $1
-              AND reported_gmv = $2
-              AND reported_pesanan_sku = $3
-              AND live_duration_minutes = $4
-        `;
-        const params: any[] = [hostId, gmv, pesananSku, duration];
-        
-        if (liveDate) {
-            sql += ` AND live_date = $5`;
-            params.push(liveDate);
+        let sql = '';
+        const params: any[] = [];
+        let paramIdx = 1;
+
+        if (gmv > 0) {
+            // Jika GMV > 0, kita lebih agresif mencegah duplikat (termasuk beda host/curi screenshot).
+            // Durasi diabaikan karena OCR sering tidak konsisten membacanya.
+            sql = `
+                SELECT 1 FROM reports
+                WHERE reported_gmv = $${paramIdx++}
+                  AND reported_pesanan_sku = $${paramIdx++}
+            `;
+            params.push(gmv, pesananSku);
+            
+            if (liveDate) {
+                sql += ` AND live_date = $${paramIdx++}`;
+                params.push(liveDate);
+            } else {
+                sql += ` AND DATE(created_at) = CURRENT_DATE`;
+            }
         } else {
-            // Jika live_date tidak terbaca, cukup cari duplicate di bulan yang sama untuk berjaga-jaga
-            // atau cukup dari 4 parameter di atas
+            // Jika GMV 0, wajar banyak host memiliki laporan yang sama (0 GMV, 0 SKU).
+            // Harus cek spesifik host_id dan durasi.
+            sql = `
+                SELECT 1 FROM reports
+                WHERE host_id = $${paramIdx++}
+                  AND reported_gmv = $${paramIdx++}
+                  AND reported_pesanan_sku = $${paramIdx++}
+                  AND live_duration_minutes = $${paramIdx++}
+            `;
+            params.push(hostId, gmv, pesananSku, duration);
+
+            if (liveDate) {
+                sql += ` AND live_date = $${paramIdx++}`;
+                params.push(liveDate);
+            } else {
+                sql += ` AND DATE(created_at) = CURRENT_DATE`;
+            }
         }
-        
+
         sql += ` LIMIT 1`;
         
         const result = await query(sql, params);
