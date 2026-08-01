@@ -4,8 +4,9 @@ import {
     TableCell, TableContainer, TableHead, TableRow, Paper,
     Chip, Button, Select, MenuItem, FormControl,
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TablePagination, Stack, Skeleton
+    TablePagination, Stack, Skeleton, TextField, InputAdornment, TableSortLabel
 } from '@mui/material';
+import { Search as SearchIcon } from '@mui/icons-material';
 import type { Report } from '../types';
 import { useReports } from '../hooks/useReports';
 import { formatCurrency, formatDuration, formatDateTime } from '../utils/format';
@@ -39,13 +40,25 @@ export default function ReportsPage() {
             endDate: d.endOf('month').format('YYYY-MM-DD')
         };
     });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState('live_date');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
+    const handleSort = (property: string) => {
+        const isAsc = sortBy === property && sortOrder === 'asc';
+        setSortOrder(isAsc ? 'desc' : 'asc');
+        setSortBy(property);
+        setPage(0);
+    };
 
     const params = {
         page: page + 1, limit: rowsPerPage,
         ...(statusFilter ? { status: statusFilter } : {}),
         ...(dateFilter.startDate ? { startDate: dateFilter.startDate } : {}),
         ...(dateFilter.endDate ? { endDate: dateFilter.endDate } : {}),
+        ...(searchQuery ? { search: searchQuery } : {}),
+        sortBy, sortOrder
     };
 
     const { reports, total, updateStatus, isPending, isLoading } = useReports(params);
@@ -66,6 +79,22 @@ export default function ReportsPage() {
 
                 {/* Filters & Actions */}
                 <Stack direction="row" spacing={1.5}>
+                    <TextField 
+                        size="small" 
+                        placeholder="Cari nama host..." 
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
+                        sx={{ width: 220 }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" sx={{ color: '#9ca3af' }} />
+                                    </InputAdornment>
+                                )
+                            }
+                        }}
+                    />
                     <FormControl sx={{ minWidth: 120 }}>
                         <Select displayEmpty value={statusFilter}
                             onChange={e => { setStatusFilter(e.target.value); setPage(0); }}
@@ -94,13 +123,53 @@ export default function ReportsPage() {
                             <TableHead>
                                 <TableRow>
                                     <TableCell>ID</TableCell>
-                                    <TableCell>Host</TableCell>
-                                    <TableCell align="right">GMV</TableCell>
-                                    <TableCell align="right">Pesanan</TableCell>
-                                    <TableCell align="right">Durasi</TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={sortBy === 'host_name'}
+                                            direction={sortBy === 'host_name' ? sortOrder : 'asc'}
+                                            onClick={() => handleSort('host_name')}
+                                        >
+                                            Host
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <TableSortLabel
+                                            active={sortBy === 'reported_gmv'}
+                                            direction={sortBy === 'reported_gmv' ? sortOrder : 'asc'}
+                                            onClick={() => handleSort('reported_gmv')}
+                                        >
+                                            GMV
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <TableSortLabel
+                                            active={sortBy === 'reported_pesanan_sku'}
+                                            direction={sortBy === 'reported_pesanan_sku' ? sortOrder : 'asc'}
+                                            onClick={() => handleSort('reported_pesanan_sku')}
+                                        >
+                                            Pesanan
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <TableSortLabel
+                                            active={sortBy === 'live_duration_minutes'}
+                                            direction={sortBy === 'live_duration_minutes' ? sortOrder : 'asc'}
+                                            onClick={() => handleSort('live_duration_minutes')}
+                                        >
+                                            Durasi
+                                        </TableSortLabel>
+                                    </TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Diverifikasi oleh</TableCell>
-                                    <TableCell>Tanggal</TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={sortBy === 'live_date'}
+                                            direction={sortBy === 'live_date' ? sortOrder : 'asc'}
+                                            onClick={() => handleSort('live_date')}
+                                        >
+                                            Tanggal
+                                        </TableSortLabel>
+                                    </TableCell>
                                     <TableCell>Aksi</TableCell>
                                 </TableRow>
                             </TableHead>
