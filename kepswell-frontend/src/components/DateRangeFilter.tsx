@@ -70,8 +70,7 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
                         slotProps={{
                             textField: { 
                                 size: 'small', 
-                                sx: { width: 180 },
-                                InputLabelProps: { shrink: true }
+                                sx: { width: 180 }
                             },
                             field: { clearable: true }
                         }}
