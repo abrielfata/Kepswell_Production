@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { 
-    FormControl, Select, MenuItem, Button, 
+    Box, Tooltip, IconButton, Button, 
     Dialog, DialogTitle, DialogContent, DialogActions 
 } from '@mui/material';
+import { DateRange as DateRangeIcon } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -19,21 +20,13 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
     const [customStart, setCustomStart] = useState<Dayjs | null>(null);
     const [customEnd, setCustomEnd] = useState<Dayjs | null>(null);
 
-    const handleSelectChange = (e: any) => {
-        const val = e.target.value;
-        if (val === 'custom') {
-            setOpenCustom(true);
+    const handleMonthChange = (newValue: Dayjs | null) => {
+        if (newValue) {
+            const startDate = newValue.startOf('month').format('YYYY-MM-DD');
+            const endDate = newValue.endOf('month').format('YYYY-MM-DD');
+            onChange({ preset: newValue.format('YYYY-MM'), startDate, endDate });
         } else {
-            let startDate = '';
-            let endDate = '';
-
-            if (/^\d{4}-\d{2}$/.test(val)) {
-                const d = dayjs(`${val}-01`);
-                startDate = d.startOf('month').format('YYYY-MM-DD');
-                endDate = d.endOf('month').format('YYYY-MM-DD');
-            }
-
-            onChange({ preset: val, startDate, endDate });
+            onChange({ preset: '', startDate: '', endDate: '' });
         }
     };
 
@@ -48,42 +41,68 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
         }
     };
 
-    let displayValue = value.preset || '';
-    if (value.preset === 'custom' && value.startDate && value.endDate) {
-        // We still keep the select value as 'custom', but the renderValue will show the dates
-    }
+    const isCustom = value.preset === 'custom';
+    const monthValue = (value.preset && !isCustom) ? dayjs(`${value.preset}-01`) : null;
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="id">
-            <FormControl sx={{ minWidth: 180 }}>
-                <Select
-                    displayEmpty
-                    value={displayValue}
-                    onChange={handleSelectChange}
-                    sx={{ height: 40 }}
-                    renderValue={(selected) => {
-                        if (!selected) return 'Semua Periode';
-                        if (/^\d{4}-\d{2}$/.test(selected as string)) {
-                            return dayjs(`${selected}-01`).format('MMMM YYYY');
-                        }
-                        if (selected === 'custom') {
-                            if (value.startDate === value.endDate) {
-                                return dayjs(value.startDate).format('DD MMM YYYY');
-                            }
-                            return `${dayjs(value.startDate).format('DD MMM')} - ${dayjs(value.endDate).format('DD MMM YYYY')}`;
-                        }
-                        return selected;
-                    }}
-                >
-                    <MenuItem value="">Semua Periode</MenuItem>
-                    {Array.from({ length: 12 }).map((_, i) => {
-                        const d = dayjs().subtract(i, 'month');
-                        const val = d.format('YYYY-MM');
-                        return <MenuItem key={val} value={val}>{d.format('MMMM YYYY')}</MenuItem>;
-                    })}
-                    <MenuItem value="custom">Pilih Tanggal...</MenuItem>
-                </Select>
-            </FormControl>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {isCustom ? (
+                    <Button 
+                        variant="outlined" 
+                        onClick={() => {
+                            setCustomStart(value.startDate ? dayjs(value.startDate) : null);
+                            setCustomEnd(value.endDate ? dayjs(value.endDate) : null);
+                            setOpenCustom(true);
+                        }}
+                        sx={{ height: 40, px: 2, minWidth: 160, justifyContent: 'space-between', borderColor: '#c4c4c4', color: 'inherit' }}
+                        endIcon={<DateRangeIcon sx={{ color: '#6b7280' }} />}
+                    >
+                        {dayjs(value.startDate).format('DD MMM')} - {dayjs(value.endDate).format('DD MMM')}
+                    </Button>
+                ) : (
+                    <DatePicker
+                        views={['year', 'month']}
+                        label="Periode Bulan"
+                        value={monthValue}
+                        onChange={handleMonthChange}
+                        format="MMMM YYYY"
+                        slotProps={{
+                            textField: { 
+                                size: 'small', 
+                                sx: { width: 180 },
+                                InputLabelProps: { shrink: true }
+                            },
+                            field: { clearable: true }
+                        }}
+                    />
+                )}
+                
+                {!isCustom && (
+                    <Tooltip title="Pilih Rentang Tanggal Spesifik">
+                        <IconButton 
+                            onClick={() => {
+                                setCustomStart(value.startDate ? dayjs(value.startDate) : null);
+                                setCustomEnd(value.endDate ? dayjs(value.endDate) : null);
+                                setOpenCustom(true);
+                            }} 
+                            sx={{ border: '1px solid #c4c4c4', borderRadius: 1, height: 40, width: 40 }}
+                        >
+                            <DateRangeIcon sx={{ color: '#6b7280' }} />
+                        </IconButton>
+                    </Tooltip>
+                )}
+                
+                {isCustom && (
+                    <Button 
+                        size="small"
+                        onClick={() => onChange({ preset: '', startDate: '', endDate: '' })}
+                        sx={{ minWidth: 'auto', p: 1 }}
+                    >
+                        Reset
+                    </Button>
+                )}
+            </Box>
 
             <Dialog open={openCustom} onClose={() => setOpenCustom(false)}>
                 <DialogTitle>Pilih Rentang Tanggal</DialogTitle>
@@ -92,11 +111,13 @@ export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
                         label="Tanggal Mulai" 
                         value={customStart} 
                         onChange={(newValue) => setCustomStart(newValue)} 
+                        format="DD/MM/YYYY"
                     />
                     <DatePicker 
                         label="Tanggal Selesai" 
                         value={customEnd} 
                         onChange={(newValue) => setCustomEnd(newValue)} 
+                        format="DD/MM/YYYY"
                     />
                 </DialogContent>
                 <DialogActions>
