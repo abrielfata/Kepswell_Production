@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { 
-    Box, Tooltip, IconButton, Button, 
-    Dialog, DialogTitle, DialogContent, DialogActions 
+    Box, Button, Popover, Divider
 } from '@mui/material';
-import { DateRange as DateRangeIcon } from '@mui/icons-material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs, { Dayjs } from 'dayjs';
+import { CalendarMonth as CalendarIcon } from '@mui/icons-material';
+import { DayPicker } from 'react-day-picker';
+import type { DateRange } from 'react-day-picker';
+import 'react-day-picker/style.css';
+import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 
 export interface DateFilterProps {
@@ -16,114 +15,137 @@ export interface DateFilterProps {
 }
 
 export default function DateRangeFilter({ value, onChange }: DateFilterProps) {
-    const [openCustom, setOpenCustom] = useState(false);
-    const [customStart, setCustomStart] = useState<Dayjs | null>(null);
-    const [customEnd, setCustomEnd] = useState<Dayjs | null>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    
+    // Convert current value to Date objects for DayPicker
+    const selectedRange: DateRange | undefined = (value.startDate && value.endDate) ? {
+        from: dayjs(value.startDate).toDate(),
+        to: dayjs(value.endDate).toDate()
+    } : undefined;
 
-    const handleMonthChange = (newValue: Dayjs | null) => {
-        if (newValue) {
-            const startDate = newValue.startOf('month').format('YYYY-MM-DD');
-            const endDate = newValue.endOf('month').format('YYYY-MM-DD');
-            onChange({ preset: newValue.format('YYYY-MM'), startDate, endDate });
-        } else {
-            onChange({ preset: '', startDate: '', endDate: '' });
-        }
+    const [tempRange, setTempRange] = useState<DateRange | undefined>(selectedRange);
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setTempRange(selectedRange);
+        setAnchorEl(event.currentTarget);
     };
 
-    const handleCustomApply = () => {
-        if (customStart && customEnd) {
-            onChange({ 
-                preset: 'custom', 
-                startDate: customStart.format('YYYY-MM-DD'), 
-                endDate: customEnd.format('YYYY-MM-DD') 
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleApply = () => {
+        if (tempRange?.from && tempRange?.to) {
+            onChange({
+                preset: 'custom',
+                startDate: dayjs(tempRange.from).format('YYYY-MM-DD'),
+                endDate: dayjs(tempRange.to).format('YYYY-MM-DD')
             });
-            setOpenCustom(false);
+            handleClose();
         }
     };
 
-    const isCustom = value.preset === 'custom';
-    const monthValue = (value.preset && !isCustom) ? dayjs(`${value.preset}-01`) : null;
+    const handleReset = () => {
+        onChange({ preset: '', startDate: '', endDate: '' });
+        handleClose();
+    };
+
+    const open = Boolean(anchorEl);
+    
+    let displayLabel = 'Semua Periode';
+    if (value.startDate && value.endDate) {
+        displayLabel = `${dayjs(value.startDate).format('DD MMM YYYY')} - ${dayjs(value.endDate).format('DD MMM YYYY')}`;
+    } else if (value.preset && !value.startDate) {
+         displayLabel = value.preset;
+    }
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="id">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {isCustom ? (
-                    <Button 
-                        variant="outlined" 
-                        onClick={() => {
-                            setCustomStart(value.startDate ? dayjs(value.startDate) : null);
-                            setCustomEnd(value.endDate ? dayjs(value.endDate) : null);
-                            setOpenCustom(true);
-                        }}
-                        sx={{ height: 40, px: 2, minWidth: 160, justifyContent: 'space-between', borderColor: '#c4c4c4', color: 'inherit' }}
-                        endIcon={<DateRangeIcon sx={{ color: '#6b7280' }} />}
-                    >
-                        {dayjs(value.startDate).format('DD MMM')} - {dayjs(value.endDate).format('DD MMM')}
-                    </Button>
-                ) : (
-                    <DatePicker
-                        views={['year', 'month']}
-                        label="Periode Bulan"
-                        value={monthValue}
-                        onChange={handleMonthChange}
-                        format="MMMM YYYY"
-                        slotProps={{
-                            textField: { 
-                                size: 'small', 
-                                sx: { width: 180 }
-                            },
-                            field: { clearable: true }
-                        }}
-                    />
-                )}
-                
-                {!isCustom && (
-                    <Tooltip title="Pilih Rentang Tanggal Spesifik">
-                        <IconButton 
-                            onClick={() => {
-                                setCustomStart(value.startDate ? dayjs(value.startDate) : null);
-                                setCustomEnd(value.endDate ? dayjs(value.endDate) : null);
-                                setOpenCustom(true);
-                            }} 
-                            sx={{ border: '1px solid #c4c4c4', borderRadius: 1, height: 40, width: 40 }}
+        <Box>
+            <Button
+                variant="outlined"
+                onClick={handleClick}
+                startIcon={<CalendarIcon sx={{ color: '#6b7280' }} />}
+                sx={{ 
+                    height: 40, px: 2, 
+                    borderColor: '#e5e7eb', 
+                    color: '#374151',
+                    textTransform: 'none',
+                    backgroundColor: 'white',
+                    minWidth: 200,
+                    justifyContent: 'flex-start',
+                    '&:hover': {
+                        backgroundColor: '#f9fafb',
+                        borderColor: '#d1d5db'
+                    }
+                }}
+            >
+                {displayLabel}
+            </Button>
+            
+            <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: { mt: 1, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }
+                    }
+                }}
+            >
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{
+                        '--rdp-accent-color': '#1976d2',
+                        '--rdp-background-color': '#e3f2fd',
+                        '& .rdp-day_selected': {
+                            fontWeight: 'bold',
+                        }
+                    }}>
+                        <DayPicker
+                            mode="range"
+                            selected={tempRange}
+                            onSelect={setTempRange}
+                            numberOfMonths={2}
+                            pagedNavigation
+                        />
+                    </Box>
+                    
+                    <Divider sx={{ my: 1.5 }} />
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Button 
+                            size="small" 
+                            color="inherit" 
+                            onClick={handleReset}
+                            sx={{ color: '#6b7280', textTransform: 'none' }}
                         >
-                            <DateRangeIcon sx={{ color: '#6b7280' }} />
-                        </IconButton>
-                    </Tooltip>
-                )}
-                
-                {isCustom && (
-                    <Button 
-                        size="small"
-                        onClick={() => onChange({ preset: '', startDate: '', endDate: '' })}
-                        sx={{ minWidth: 'auto', p: 1 }}
-                    >
-                        Reset
-                    </Button>
-                )}
-            </Box>
-
-            <Dialog open={openCustom} onClose={() => setOpenCustom(false)}>
-                <DialogTitle>Pilih Rentang Tanggal</DialogTitle>
-                <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, minWidth: 300 }}>
-                    <DatePicker 
-                        label="Tanggal Mulai" 
-                        value={customStart} 
-                        onChange={(newValue) => setCustomStart(newValue)} 
-                        format="DD/MM/YYYY"
-                    />
-                    <DatePicker 
-                        label="Tanggal Selesai" 
-                        value={customEnd} 
-                        onChange={(newValue) => setCustomEnd(newValue)} 
-                        format="DD/MM/YYYY"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenCustom(false)}>Batal</Button>
-                    <Button onClick={handleCustomApply} variant="contained" disabled={!customStart || !customEnd}>Terapkan</Button>
-                </DialogActions>
-            </Dialog>
-        </LocalizationProvider>
+                            Reset / Semua Periode
+                        </Button>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button size="small" onClick={handleClose} sx={{ textTransform: 'none', color: '#6b7280' }}>
+                                Batal
+                            </Button>
+                            <Button 
+                                size="small" 
+                                variant="contained" 
+                                onClick={handleApply}
+                                disabled={!tempRange?.from || !tempRange?.to}
+                                disableElevation
+                                sx={{ textTransform: 'none' }}
+                            >
+                                Terapkan
+                            </Button>
+                        </Box>
+                    </Box>
+                </Box>
+            </Popover>
+        </Box>
     );
 }
