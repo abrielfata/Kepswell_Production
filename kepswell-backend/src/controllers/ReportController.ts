@@ -8,7 +8,7 @@ export class ReportController {
 
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { status, month, year, host_id, page, limit, startDate, endDate } = req.query;
+            const { status, month, year, host_id, page, limit, startDate, endDate, search, sortBy, sortOrder } = req.query;
             const result = await this.reportService.getAll({
                 status: status as string,
                 month: month ? Number(month) : undefined,
@@ -18,6 +18,9 @@ export class ReportController {
                 host_id: host_id ? Number(host_id) : undefined,
                 page: page ? Number(page) : 1,
                 limit: limit ? Number(limit) : 10,
+                search: search as string,
+                sortBy: sortBy as string,
+                sortOrder: sortOrder as string,
             });
             return res.status(200).json({ success: true, data: result });
         } catch (err) {
