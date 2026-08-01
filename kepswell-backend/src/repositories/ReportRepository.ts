@@ -36,9 +36,9 @@ export class ReportRepository {
             params.push(filters.host_id);
         }
         if (filters.startDate && filters.endDate) {
-            conditions.push(`r.created_at >= $${idx++}`);
+            conditions.push(`COALESCE(r.live_date, r.created_at) >= $${idx++}`);
             params.push(`${filters.startDate} 00:00:00`);
-            conditions.push(`r.created_at <= $${idx++}`);
+            conditions.push(`COALESCE(r.live_date, r.created_at) <= $${idx++}`);
             params.push(`${filters.endDate} 23:59:59`);
         }
         if (filters.search) {
@@ -167,9 +167,9 @@ export class ReportRepository {
         let idx = 1;
 
         if (filters.startDate && filters.endDate) {
-            conditions.push(`created_at >= $${idx++}`);
+            conditions.push(`COALESCE(live_date, created_at) >= $${idx++}`);
             params.push(`${filters.startDate} 00:00:00`);
-            conditions.push(`created_at <= $${idx++}`);
+            conditions.push(`COALESCE(live_date, created_at) <= $${idx++}`);
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`month = $${idx++}`); params.push(filters.month); }
@@ -197,9 +197,9 @@ export class ReportRepository {
         let idx = 1;
 
         if (filters.startDate && filters.endDate) {
-            conditions.push(`r.created_at >= $${idx++}`);
+            conditions.push(`COALESCE(r.live_date, r.created_at) >= $${idx++}`);
             params.push(`${filters.startDate} 00:00:00`);
-            conditions.push(`r.created_at <= $${idx++}`);
+            conditions.push(`COALESCE(r.live_date, r.created_at) <= $${idx++}`);
             params.push(`${filters.endDate} 23:59:59`);
         } else {
             if (filters.month) { conditions.push(`r.month = $${idx++}`); params.push(filters.month); }
