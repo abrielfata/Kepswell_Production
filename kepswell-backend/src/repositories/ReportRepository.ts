@@ -11,6 +11,9 @@ export class ReportRepository {
         limit?: number;
         startDate?: string;
         endDate?: string;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: string;
     }): Promise<{ reports: any[]; total: number }> {
         const conditions: string[] = [];
         const params: any[] = [];
@@ -38,6 +41,10 @@ export class ReportRepository {
             conditions.push(`r.created_at <= $${idx++}`);
             params.push(`${filters.endDate} 23:59:59`);
         }
+        if (filters.search) {
+            conditions.push(`h.full_name ILIKE $${idx++}`);
+            params.push(`%${filters.search}%`);
+        }
 
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
         const page  = filters.page  || 1;
@@ -45,10 +52,20 @@ export class ReportRepository {
         const offset = (page - 1) * limit;
 
         const countResult = await query(
-            `SELECT COUNT(*) FROM reports r ${where}`,
+            `SELECT COUNT(*) FROM reports r JOIN hosts h ON r.host_id = h.id ${where}`,
             params
         );
         const total = parseInt(countResult.rows[0].count);
+
+        const allowedSortCols = ['host_name', 'reported_gmv', 'reported_pesanan_sku', 'live_duration_minutes', 'live_date'];
+        let sortCol = 'r.created_at';
+        if (filters.sortBy && allowedSortCols.includes(filters.sortBy)) {
+            sortCol = filters.sortBy === 'host_name' ? 'h.full_name' : `r.${filters.sortBy}`;
+        }
+        let sortDir = 'DESC';
+        if (filters.sortOrder && filters.sortOrder.toUpperCase() === 'ASC') {
+            sortDir = 'ASC';
+        }
 
         const dataResult = await query(
             `SELECT r.*, h.full_name as host_name,
@@ -57,7 +74,7 @@ export class ReportRepository {
              JOIN hosts h ON r.host_id = h.id
              LEFT JOIN users u ON r.user_id = u.id
              ${where}
-             ORDER BY r.created_at DESC
+             ORDER BY ${sortCol} ${sortDir}
              LIMIT $${idx++} OFFSET $${idx++}`,
             [...params, limit, offset]
         );

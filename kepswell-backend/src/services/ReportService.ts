@@ -15,6 +15,9 @@ export class ReportService {
         host_id?: number;
         page?: number;
         limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: string;
     }) {
         return this.reportRepo.findAll(filters);
     }
