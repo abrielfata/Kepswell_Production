@@ -191,11 +191,28 @@ export class TelegramBot {
             let targetMonth = now.getMonth() + 1;
             let targetYear = now.getFullYear();
 
+            // Skenario: Mulai rekap (cut-off) adalah tanggal 26
+            if (now.getDate() >= 26) {
+                targetMonth += 1;
+                if (targetMonth > 12) {
+                    targetMonth = 1;
+                    targetYear += 1;
+                }
+            }
+
             if (pending.liveDate) {
                 const liveDateObj = new Date(pending.liveDate);
                 if (!isNaN(liveDateObj.getTime())) {
                     targetMonth = liveDateObj.getMonth() + 1;
                     targetYear = liveDateObj.getFullYear();
+                    
+                    if (liveDateObj.getDate() >= 26) {
+                        targetMonth += 1;
+                        if (targetMonth > 12) {
+                            targetMonth = 1;
+                            targetYear += 1;
+                        }
+                    }
                 }
             }
 
