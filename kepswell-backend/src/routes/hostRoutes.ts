@@ -7,10 +7,9 @@ const ctrl = new HostController();
 
 router.use(authenticate, authorizeManager);
 
-router.get('/',                       ctrl.getAll);
-router.get('/:id',                    ctrl.getById);
-router.post('/',                      ctrl.create);
-router.delete('/:id',                 ctrl.delete);
-
+router.get('/', ctrl.getAll);
+router.get('/:id', ctrl.getById);
+router.post('/', ctrl.create);
+router.delete('/:id', ctrl.delete);
 
 export default router;

@@ -1,0 +1,42 @@
+{
+  "gmvPatterns": [
+    "PEROLEHAN\\s*GMV\\s*\\(RP\\).*?#\\s*([\\d.,]+)",
+    "PEROLEHAN\\s*GMV\\s*\\(RP\\)[^\\d]*([\\d.,]+)",
+    "GMV\\s*LANGSUNG[^0-9]*RP\\s*([\\d.,K]+)",
+    "GMV[^0-9]*RP\\s*([\\d.,K]+)",
+    "PENJUALAN[^0-9]*RP\\s*([\\d.,K]+)",
+    "RP\\s*([\\d.,K]+)"
+  ],
+  "durationPatterns": [
+    {
+      "regex": "(\\d+)\\s*(?:jam\\b|j\\b|h\\b|hrs\\b|\\)|\\]|l\\b|i\\b)(?:[,|\\s]*(\\d+)\\s*(?:mnt|menit|m\\b|min\\b))?",
+      "type": "jam"
+    },
+    {
+      "regex": "(\\d+)\\s*(?:mnt|menit|m\\b|min\\b)",
+      "type": "menit"
+    },
+    {
+      "regex": "(\\d{1,2}):(\\d{2}):(\\d{2})",
+      "type": "hms"
+    },
+    {
+      "regex": "durasi[:\\s]+(\\d+)\\s*(?:mnt|menit|m\\b|min\\b)",
+      "type": "menit"
+    }
+  ],
+  "pesananSkuPatterns": {
+    "terjualMatch": "terjual\\s*di\\s*[a-z]*\\s*(\\d+)",
+    "afterGmvK": "Rp[\\d.,]+K\\s*(\\d{1,4})\\b",
+    "afterGmvNoK": "Rp[\\d.,]+\\s+(\\d{1,4})\\b(?=.{0,60}Pesanan\\s+SK)",
+    "beforeLabel": "\\b(\\d{1,4})\\s+Pesanan\\s+SK[A-Z]*",
+    "afterLabel": "Pesanan\\s+SK[A-Z]*\\s*[:\\-]?\\s*(\\d{1,4})\\b"
+  },
+  "liveDatePatterns": {
+    "timeFix": "(?:\\b|(?<=\\s))([0-9OoIilZzSs]{1,2})\\s*[:.,]\\s*([0-9OoIilZzSs]{2})(?:\\s*[:.,]\\s*([0-9OoIilZzSs]{2}))?(?=\\b|\\s)",
+    "relativeMatch": "(Hari\\s*ini|Kemarin|Today|Yesterday)(?:[\\s,]*(\\d{1,2})[:.](\\d{2}))?",
+    "tiktokRangeMatch": "(\\d{1,2})\\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*[\\s.,\\-]+(\\d{1,2})\\s*[:.,]*\\s*(\\d{2})(?:\\s*[:.,]*\\s*(\\d{2}))?\\s*[-~_]+\\s*",
+    "numericMatch": "(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{2,4})(?:[\\s.,\\-]*(\\d{1,2})\\s*[:.,]*\\s*(\\d{2}))?",
+    "textMatch": "(\\d{1,2})\\s+(Jan|Feb|Mar|Apr|May|Mei|Jun|Jul|Aug|Ags|Agu|Sep|Oct|Okt|Nov|Dec|Des)[a-z]*(?:[\\s.,\\-]*(\\d{1,2})\\s*[:.,]*\\s*(\\d{2}))?"
+  }
+}
