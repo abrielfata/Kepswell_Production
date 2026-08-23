@@ -116,21 +116,21 @@ export class TelegramBot {
       await this.sendMessage(
         host.telegram_chat_id,
         `✅ *Laporan #${params.report_id} Disetujui!*\n\n` +
-          `GMV      : ${gmvFormatted}\n` +
-          `Pesanan  : ${params.pesanan_sku} SKU\n` +
-          `Durasi   : ${durasiText}\n` +
-          `Waktu    : ${liveDateText}\n` +
-          `\n\nTerima kasih! Data Anda telah dicatat. 🎉`,
+        `GMV      : ${gmvFormatted}\n` +
+        `Pesanan  : ${params.pesanan_sku} SKU\n` +
+        `Durasi   : ${durasiText}\n` +
+        `Waktu    : ${liveDateText}\n` +
+        `\n\nTerima kasih! Data Anda telah dicatat. 🎉`,
       );
     } else {
       await this.sendMessage(
         host.telegram_chat_id,
         `❌ *Laporan #${params.report_id} Ditolak*\n\n` +
-          `GMV      : ${gmvFormatted}\n` +
-          `Pesanan  : ${params.pesanan_sku} SKU\n` +
-          `Durasi   : ${durasiText}\n` +
-          `Waktu    : ${liveDateText}\n` +
-          `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`,
+        `GMV      : ${gmvFormatted}\n` +
+        `Pesanan  : ${params.pesanan_sku} SKU\n` +
+        `Durasi   : ${durasiText}\n` +
+        `Waktu    : ${liveDateText}\n` +
+        `\n\nSilakan hubungi Manager untuk informasi lebih lanjut.`,
       );
     }
   }
@@ -149,7 +149,7 @@ export class TelegramBot {
         await this.sendMessage(
           chatId,
           '👋 Selamat datang!\n\nAnda belum terhubung sebagai host.\n' +
-            'Minta *kode registrasi* ke Manager, lalu kirim:\n`/daftar KODE`',
+          'Minta *kode registrasi* ke Manager, lalu kirim:\n`/daftar KODE`',
         );
       } else if (!host.is_active) {
         await this.sendMessage(chatId, '❌ Akun Anda dinonaktifkan. Hubungi Manager.');
@@ -189,28 +189,12 @@ export class TelegramBot {
       let targetMonth = now.getMonth() + 1;
       let targetYear = now.getFullYear();
 
-      // Skenario: Mulai rekap (cut-off) adalah tanggal 26
-      if (now.getDate() >= 26) {
-        targetMonth += 1;
-        if (targetMonth > 12) {
-          targetMonth = 1;
-          targetYear += 1;
-        }
-      }
-
       if (pending.liveDate) {
         const liveDateObj = new Date(pending.liveDate);
         if (!isNaN(liveDateObj.getTime())) {
-          targetMonth = liveDateObj.getMonth() + 1;
-          targetYear = liveDateObj.getFullYear();
-
-          if (liveDateObj.getDate() >= 26) {
-            targetMonth += 1;
-            if (targetMonth > 12) {
-              targetMonth = 1;
-              targetYear += 1;
-            }
-          }
+          const endDateObj = new Date(liveDateObj.getTime() + (pending.duration || 0) * 60000);
+          targetMonth = endDateObj.getMonth() + 1;
+          targetYear = endDateObj.getFullYear();
         }
       }
 
@@ -239,11 +223,11 @@ export class TelegramBot {
       await this.sendMessage(
         chatId,
         `✅ *Laporan Tersimpan!*\n\n` +
-          `GMV      : ${gmvFormatted}\n` +
-          `Pesanan  : ${pending.pesanan_sku} SKU\n` +
-          `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n` +
-          `Waktu    : ${liveDateText}\n\n` +
-          `Status: *PENDING* — menunggu verifikasi manager.`,
+        `GMV      : ${gmvFormatted}\n` +
+        `Pesanan  : ${pending.pesanan_sku} SKU\n` +
+        `Durasi   : ${Math.floor(pending.duration / 60)}j ${pending.duration % 60}m\n` +
+        `Waktu    : ${liveDateText}\n\n` +
+        `Status: *PENDING* — menunggu verifikasi manager.`,
       );
     } else if (response === 'N' || response === 'TIDAK') {
       this.pendingReports.delete(telegramChatId);
@@ -260,7 +244,7 @@ export class TelegramBot {
       await this.sendMessage(
         chatId,
         '❌ Akun host Anda belum diaktivasi.\n' +
-          'Minta kode registrasi ke Manager lalu kirim `/daftar KODE` atau ketik /start.',
+        'Minta kode registrasi ke Manager lalu kirim `/daftar KODE` atau ketik /start.',
       );
       return;
     }
@@ -322,12 +306,12 @@ export class TelegramBot {
       await this.sendMessage(
         chatId,
         `⚠️ *Laporan Ditolak*\nTerdeteksi anomali pada data: *${anomalyReason}*\n\n` +
-          `*Data yang terbaca oleh sistem:*\n` +
-          `GMV      : ${gmvFmt}\n` +
-          `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
-          `Durasi   : ${durFmt}\n` +
-          `Waktu    : ${dateFmt}\n\n` +
-          `Pastikan screenshot yang Anda kirim adalah laporan yang benar dan jelas.`,
+        `*Data yang terbaca oleh sistem:*\n` +
+        `GMV      : ${gmvFmt}\n` +
+        `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
+        `Durasi   : ${durFmt}\n` +
+        `Waktu    : ${dateFmt}\n\n` +
+        `Pastikan screenshot yang Anda kirim adalah laporan yang benar dan jelas.`,
       );
       return;
     }
@@ -376,11 +360,11 @@ export class TelegramBot {
     await this.sendMessage(
       chatId,
       `✅ *Screenshot Diproses!*\n\n` +
-        `GMV      : ${gmvFormatted}\n` +
-        `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
-        `Durasi   : ${durasiText}\n` +
-        `Waktu    : ${liveDateText}\n\n` +
-        `Ketik *Y* untuk simpan atau *N* untuk batal.`,
+      `GMV      : ${gmvFormatted}\n` +
+      `Pesanan  : ${ocr.parsedPesananSKU} SKU\n` +
+      `Durasi   : ${durasiText}\n` +
+      `Waktu    : ${liveDateText}\n\n` +
+      `Ketik *Y* untuk simpan atau *N* untuk batal.`,
     );
   }
 
@@ -407,7 +391,7 @@ export class TelegramBot {
       await this.sendMessage(
         chatId,
         `✅ Berhasil! Akun *${host?.full_name ?? 'host'}* telah terhubung.\n\n` +
-          `Kirimkan screenshot GMV untuk mulai laporan.`,
+        `Kirimkan screenshot GMV untuk mulai laporan.`,
       );
       return;
     }
@@ -440,7 +424,7 @@ export class TelegramBot {
     console.log('🤖 Telegram Bot started polling...');
 
     // Remove webhook first to avoid conflicts
-    await axios.post(`${this.BASE_URL}/deleteWebhook`).catch(() => {});
+    await axios.post(`${this.BASE_URL}/deleteWebhook`).catch(() => { });
 
     const poll = async () => {
       if (!this.isPolling) return;

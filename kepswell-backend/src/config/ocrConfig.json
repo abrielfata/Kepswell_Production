@@ -9,6 +9,10 @@
   ],
   "durationPatterns": [
     {
+      "regex": "(\\d+)[1lIi!|]\\s*[,.]?\\s*(\\d+)\\s*(?:mnt|menit|m\\b|min\\b)",
+      "type": "jam"
+    },
+    {
       "regex": "(\\d+)\\s*(?:jam\\b|j\\b|h\\b|hrs\\b|\\)|\\]|l\\b|i\\b)(?:[,|\\s]*(\\d+)\\s*(?:mnt|menit|m\\b|min\\b))?",
       "type": "jam"
     },

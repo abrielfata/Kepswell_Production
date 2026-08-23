@@ -36,9 +36,9 @@ export class ReportRepository {
       params.push(filters.host_id);
     }
     if (filters.startDate && filters.endDate) {
-      conditions.push(`COALESCE(r.live_date, r.created_at) >= $${idx++}`);
+      conditions.push(`(COALESCE(r.live_date, r.created_at) + COALESCE(r.live_duration_minutes, 0) * interval '1 minute') >= $${idx++}`);
       params.push(`${filters.startDate} 00:00:00`);
-      conditions.push(`COALESCE(r.live_date, r.created_at) <= $${idx++}`);
+      conditions.push(`(COALESCE(r.live_date, r.created_at) + COALESCE(r.live_duration_minutes, 0) * interval '1 minute') <= $${idx++}`);
       params.push(`${filters.endDate} 23:59:59`);
     }
     if (filters.search) {
@@ -184,9 +184,9 @@ export class ReportRepository {
     let idx = 1;
 
     if (filters.startDate && filters.endDate) {
-      conditions.push(`COALESCE(live_date, created_at) >= $${idx++}`);
+      conditions.push(`(COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute') >= $${idx++}`);
       params.push(`${filters.startDate} 00:00:00`);
-      conditions.push(`COALESCE(live_date, created_at) <= $${idx++}`);
+      conditions.push(`(COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute') <= $${idx++}`);
       params.push(`${filters.endDate} 23:59:59`);
     } else {
       if (filters.month) {
@@ -225,9 +225,9 @@ export class ReportRepository {
     let idx = 1;
 
     if (filters.startDate && filters.endDate) {
-      conditions.push(`COALESCE(r.live_date, r.created_at) >= $${idx++}`);
+      conditions.push(`(COALESCE(r.live_date, r.created_at) + COALESCE(r.live_duration_minutes, 0) * interval '1 minute') >= $${idx++}`);
       params.push(`${filters.startDate} 00:00:00`);
-      conditions.push(`COALESCE(r.live_date, r.created_at) <= $${idx++}`);
+      conditions.push(`(COALESCE(r.live_date, r.created_at) + COALESCE(r.live_duration_minutes, 0) * interval '1 minute') <= $${idx++}`);
       params.push(`${filters.endDate} 23:59:59`);
     } else {
       if (filters.month) {
@@ -296,9 +296,9 @@ export class ReportRepository {
     let idx = 1;
 
     if (filters.startDate && filters.endDate) {
-      conditions.push(`COALESCE(live_date, created_at) >= $${idx++}`);
+      conditions.push(`(COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute') >= $${idx++}`);
       params.push(`${filters.startDate} 00:00:00`);
-      conditions.push(`COALESCE(live_date, created_at) <= $${idx++}`);
+      conditions.push(`(COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute') <= $${idx++}`);
       params.push(`${filters.endDate} 23:59:59`);
     } else {
       if (filters.month) {
@@ -315,12 +315,12 @@ export class ReportRepository {
 
     const sql = `
             SELECT 
-                TO_CHAR(DATE(COALESCE(live_date, created_at)), 'YYYY-MM-DD') as date,
+                TO_CHAR(DATE((COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute')), 'YYYY-MM-DD') as date,
                 COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN reported_gmv ELSE 0 END), 0) as total_gmv
             FROM reports
             ${where}
-            GROUP BY DATE(COALESCE(live_date, created_at))
-            ORDER BY DATE(COALESCE(live_date, created_at)) ASC
+            GROUP BY DATE((COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute'))
+            ORDER BY DATE((COALESCE(live_date, created_at) + COALESCE(live_duration_minutes, 0) * interval '1 minute')) ASC
         `;
 
     const result = await query(sql, params);

@@ -2,6 +2,20 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, But
 import { formatCurrency, formatDuration } from '../../utils/format';
 import type { Report } from '../../types';
 
+function formatLiveDate(dateStr?: string | null): string {
+    if (!dateStr) return 'Tidak terdeteksi';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Tidak terdeteksi';
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+    }).format(d).replace(/\./g, ':');
+}
+
 interface ReportReviewDialogProps {
     report: Report | null;
     onClose: () => void;
@@ -44,6 +58,7 @@ export default function ReportReviewDialog({ report, onClose, onVerify, isPendin
                         { label: 'GMV', value: formatCurrency(report.reported_gmv || 0) },
                         { label: 'Pesanan', value: `${report.reported_pesanan_sku || 0} SKU` },
                         { label: 'Durasi', value: formatDuration(report.live_duration_minutes || 0) },
+                        { label: 'Waktu', value: formatLiveDate(report.live_date) },
                     ].map(row => (
                         <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography sx={{ fontSize: '0.8rem', color: '#6b7280' }}>{row.label}</Typography>

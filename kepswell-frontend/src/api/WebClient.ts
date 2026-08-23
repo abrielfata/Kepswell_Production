@@ -189,16 +189,9 @@ export class WebClient {
             const grouped: Record<string, any[]> = {};
             let totalCO     = 0;
             let totalGMV    = 0;
-            let totalJamDec = 0;
+            let totalMenit  = 0;
 
-            const calcShiftDuration = (minutes: number) => {
-                const hours     = Math.floor(minutes / 60);
-                const remainder = minutes % 60;
-                let additional  = 0;
-                if (remainder >= 30 && remainder < 50) additional = 0.5;
-                else if (remainder >= 50) additional = 1;
-                return hours + additional;
-            };
+
 
             data.sort((a: any, b: any) => new Date(a.live_date || a.created_at).getTime() - new Date(b.live_date || b.created_at).getTime());
 
@@ -214,7 +207,7 @@ export class WebClient {
 
                 totalCO     += Number(r.reported_pesanan_sku || 0);
                 totalGMV    += Number(r.reported_gmv || 0);
-                totalJamDec += calcShiftDuration(Number(r.live_duration_minutes || 0));
+                totalMenit  += Number(r.live_duration_minutes || 0);
             });
 
             const m = params.startDate ? new Date(params.startDate).toLocaleDateString('id-ID', { month: 'long' }).toUpperCase() : "SEMUA PERIODE";
@@ -223,9 +216,9 @@ export class WebClient {
             let excelData: any[][] = [];
             excelData.push([`LAPORAN LIVE TIKTOK KEPSWELL BULAN ${m}`, '', '', '', '', '']); // Row 0
             
-            const formatTotalJam = totalJamDec % 1 === 0 ? totalJamDec.toString() : totalJamDec.toFixed(1).replace('.', ',');
-            excelData.push([`TOTAL REKAP`, '', '', totalCO, formatCsvCurrency(totalGMV), formatTotalJam]); // Row 1
-            excelData.push([`TANGGAL`, `NAMA`, `JAM`, `JUMLAH CO`, `PENGHASILAN`, `JAM`]); // Row 2
+            const formatTotalMenit = totalMenit.toString();
+            excelData.push([`TOTAL REKAP`, '', '', totalCO, formatCsvCurrency(totalGMV), formatTotalMenit]); // Row 1
+            excelData.push([`TANGGAL`, `NAMA`, `JAM`, `JUMLAH CO`, `PENGHASILAN`, `MENIT`]); // Row 2
 
             let greyRows: number[] = [];
 
@@ -235,11 +228,10 @@ export class WebClient {
                     const co  = Number(r.reported_pesanan_sku || 0);
                     const gmv = Number(r.reported_gmv || 0);
                     
-                    const durationH = calcShiftDuration(Number(r.live_duration_minutes || 0));
-                    const durStr    = durationH % 1 === 0 ? durationH.toString() : durationH.toFixed(1).replace('.', ',');
+                    const durStr = Number(r.live_duration_minutes || 0).toString();
 
-                    const end   = new Date(r.live_date || r.created_at);
-                    const start = new Date(end.getTime() - Number(r.live_duration_minutes || 0) * 60000);
+                    const start = new Date(r.live_date || r.created_at);
+                    const end   = new Date(start.getTime() + Number(r.live_duration_minutes || 0) * 60000);
                     
                     const startH = String(start.getHours()).padStart(2, '0');
                     const startM = String(start.getMinutes()).padStart(2, '0');
