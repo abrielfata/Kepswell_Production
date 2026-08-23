@@ -1,7 +1,6 @@
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import { v2 as cloudinary } from 'cloudinary';
+
 import { ENV } from '../config/env';
 import { HostService } from '../services/HostService';
 import { ReportService } from '../services/ReportService';
@@ -81,22 +80,35 @@ export class TelegramBot {
   }
 
   /**
-   * Mengunduh foto dari Telegram dan menyimpan ke lokal.
-   * Melempar Error jika unduhan gagal (fail-fast — tidak return null).
+   * Mengunduh foto dari Telegram lalu mengunggahnya ke Cloudinary.
+   * Mengembalikan URL publik gambar.
    */
-  private async downloadPhoto(fileId: string): Promise<string> {
+  private async uploadPhotoToCloud(fileId: string): Promise<string> {
     const fileRes = await axios.get(`${this.BASE_URL}/getFile?file_id=${fileId}`);
     const filePath = fileRes.data.result.file_path;
     const fileUrl = `https://api.telegram.org/file/bot${ENV.TELEGRAM_BOT_TOKEN}/${filePath}`;
+    
     const imgRes = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(imgRes.data);
 
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    // Konfigurasi eksplisit Cloudinary (berjaga-jaga jika process.env telat terbaca)
+    cloudinary.config({
+      url: ENV.CLOUDINARY_URL
+    });
 
-    const filename = `screenshot_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.jpg`;
-    const savePath = path.join(uploadsDir, filename);
-    fs.writeFileSync(savePath, imgRes.data);
-    return filename;
+    return new Promise<string>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: 'kepswell_reports' },
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            return reject(error);
+          }
+          resolve(result!.secure_url);
+        }
+      );
+      uploadStream.end(buffer);
+    });
   }
 
   async notifyHostStatusUpdate(params: NotifyStatusParams): Promise<void> {
@@ -257,17 +269,15 @@ export class TelegramBot {
 
     const photo = photoArray[photoArray.length - 1];
 
-    let filename: string;
+    let publicUrl: string;
     try {
-      filename = await this.downloadPhoto(photo.file_id);
+      publicUrl = await this.uploadPhotoToCloud(photo.file_id);
     } catch (err) {
-      await this.sendMessage(chatId, '❌ Gagal mengunduh foto. Coba lagi.');
+      await this.sendMessage(chatId, '❌ Gagal mengunggah foto ke Cloud. Coba lagi.');
       return;
     }
 
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    const localPath = path.join(uploadsDir, filename);
-    const ocr = await this.ocrService.extractFromImage(localPath);
+    const ocr = await this.ocrService.extractFromImageUrl(publicUrl);
 
     if (!ocr.success) {
       await this.sendMessage(chatId, `❌ Gagal membaca teks.\n${ocr.error}`);
@@ -343,7 +353,7 @@ export class TelegramBot {
       return;
     }
 
-    const screenshotUrl = `${ENV.BACKEND_URL}/uploads/${filename}`;
+    const screenshotUrl = publicUrl;
 
     this.pendingReports.set(telegramChatId, {
       host_id: host.id,
@@ -414,39 +424,6 @@ export class TelegramBot {
     });
     console.log('🤖 Webhook set:', res.data.ok);
   }
-
-  private lastUpdateId: number = 0;
-  private isPolling: boolean = false;
-
-  public async startPolling(): Promise<void> {
-    if (this.isPolling) return;
-    this.isPolling = true;
-    console.log('🤖 Telegram Bot started polling...');
-
-    // Remove webhook first to avoid conflicts
-    await axios.post(`${this.BASE_URL}/deleteWebhook`).catch(() => { });
-
-    const poll = async () => {
-      if (!this.isPolling) return;
-      try {
-        const res = await axios.get(`${this.BASE_URL}/getUpdates`, {
-          params: { offset: this.lastUpdateId + 1, timeout: 30 },
-        });
-        const updates = res.data?.result || [];
-        for (const update of updates) {
-          this.lastUpdateId = update.update_id;
-          await this.processUpdate(update).catch((err) =>
-            console.error('Error processing update:', err),
-          );
-        }
-      } catch (err: any) {
-        console.error('Polling error:', err.message);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
-      setTimeout(poll, 0);
-    };
-    poll();
-  }
 }
 
 export const telegramBot = new TelegramBot();
@@ -455,4 +432,4 @@ export const processUpdate = (update: any) => telegramBot.processUpdate(update);
 export const notifyHostStatusUpdate = (params: NotifyStatusParams) =>
   telegramBot.notifyHostStatusUpdate(params);
 export const setupWebhook = (url: string) => telegramBot.setupWebhook(url);
-export const startPolling = () => telegramBot.startPolling();
+

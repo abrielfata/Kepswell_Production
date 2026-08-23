@@ -233,35 +233,66 @@ export class OCRService {
         timeout: 45000,
       });
 
-      if (response.data.IsErroredOnProcessing) {
-        throw new Error(response.data.ErrorMessage?.[0] || 'OCR failed');
-      }
-
-      const rawText = response.data.ParsedResults?.[0]?.ParsedText || '';
-
-      const parsedPesananSKU = this.parsePesananSKU(rawText);
-      const parsedGMV = this.parseGMV(rawText);
-      const parsedDurationMinutes = this.parseDurationMinutes(rawText);
-      const parsedLiveDate = this.parseLiveDate(rawText);
-
-      return {
-        success: true,
-        rawText,
-        parsedGMV,
-        parsedDurationMinutes,
-        parsedPesananSKU,
-        parsedLiveDate,
-      };
+      return this.processOcrResponse(response);
     } catch (err: any) {
-      return {
-        success: false,
-        rawText: '',
-        parsedGMV: 0,
-        parsedDurationMinutes: 0,
-        parsedPesananSKU: 0,
-        error: err.message,
-      };
+      return this.handleOcrError(err);
     }
+  }
+
+  async extractFromImageUrl(imageUrl: string): Promise<OcrResult> {
+    try {
+      const form = new FormData();
+      form.append('apikey', ENV.OCRSPACE_API_KEY);
+      form.append('language', 'eng');
+      form.append('isOverlayRequired', 'false');
+      form.append('detectOrientation', 'true');
+      form.append('scale', 'true');
+      form.append('isTable', 'true');
+      form.append('OCREngine', '3');
+      form.append('url', imageUrl);
+
+      const response = await axios.post('https://api.ocr.space/parse/image', form, {
+        headers: form.getHeaders(),
+        timeout: 45000,
+      });
+
+      return this.processOcrResponse(response);
+    } catch (err: any) {
+      return this.handleOcrError(err);
+    }
+  }
+
+  private processOcrResponse(response: any): OcrResult {
+    if (response.data.IsErroredOnProcessing) {
+      throw new Error(response.data.ErrorMessage?.[0] || 'OCR failed');
+    }
+
+    const rawText = response.data.ParsedResults?.[0]?.ParsedText || '';
+
+    const parsedPesananSKU = this.parsePesananSKU(rawText);
+    const parsedGMV = this.parseGMV(rawText);
+    const parsedDurationMinutes = this.parseDurationMinutes(rawText);
+    const parsedLiveDate = this.parseLiveDate(rawText);
+
+    return {
+      success: true,
+      rawText,
+      parsedGMV,
+      parsedDurationMinutes,
+      parsedPesananSKU,
+      parsedLiveDate,
+    };
+  }
+
+  private handleOcrError(err: any): OcrResult {
+    return {
+      success: false,
+      rawText: '',
+      parsedGMV: 0,
+      parsedDurationMinutes: 0,
+      parsedPesananSKU: 0,
+      error: err.message,
+    };
   }
 }
 

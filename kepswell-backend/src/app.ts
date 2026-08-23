@@ -8,9 +8,12 @@ import { apiLimiter } from './middleware/securityMiddleware';
 import authRoutes from './routes/authRoutes';
 import hostRoutes from './routes/hostRoutes';
 import reportRoutes from './routes/reportRoutes';
-import { processUpdate, setupWebhook, startPolling } from './bot/telegramBot';
+import { processUpdate, setupWebhook } from './bot/telegramBot';
 
 const app = express();
+
+// Trust reverse proxy (Ngrok/Render) for accurate rate limiting IP detection
+app.set('trust proxy', 1);
 
 // ── Security Headers ──
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -79,16 +82,12 @@ app.listen(ENV.PORT, async () => {
   console.log(`🚀 Server running on port ${ENV.PORT}`);
   console.log(`📍 ENV: ${ENV.NODE_ENV}`);
 
-  const renderUrl = process.env.RENDER_EXTERNAL_URL;
-  if (ENV.NODE_ENV === 'development' || !renderUrl) {
-    console.log('🤖 Using Long Polling for Telegram Bot...');
-    startPolling().catch((err) => console.error('❌ Polling start failed:', err.message));
-  } else {
-    const webhookUrl = `${renderUrl}/api/bot/webhook`;
-    setupWebhook(webhookUrl)
-      .then(() => console.log(`🤖 Webhook registered: ${webhookUrl}`))
-      .catch((err) => console.error('❌ Webhook setup failed:', err.message));
-  }
+  const renderUrl = process.env.RENDER_EXTERNAL_URL || ENV.BACKEND_URL;
+  const webhookUrl = `${renderUrl}/api/bot/webhook`;
+  
+  setupWebhook(webhookUrl)
+    .then(() => console.log(`🤖 Webhook registered: ${webhookUrl}`))
+    .catch((err) => console.error('❌ Webhook setup failed:', err.message));
 });
 
 export default app;
