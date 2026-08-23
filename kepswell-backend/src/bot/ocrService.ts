@@ -224,7 +224,8 @@ export class OCRService {
       form.append('isOverlayRequired', 'false');
       form.append('detectOrientation', 'true');
       form.append('scale', 'true');
-      form.append('OCREngine', '2');
+      form.append('isTable', 'true');
+      form.append('OCREngine', '3');
       form.append('file', fs.createReadStream(imagePath));
 
       const response = await axios.post('https://api.ocr.space/parse/image', form, {
@@ -269,3 +270,4 @@ export const ocrService = new OCRService();
 
 // Backward-compatible export untuk kode lama yang masih import langsung
 export const extractFromImage = (imagePath: string) => ocrService.extractFromImage(imagePath);
+// Trigger restart 4

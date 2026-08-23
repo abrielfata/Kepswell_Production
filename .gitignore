@@ -26,5 +26,6 @@ Thumbs.db
 *.xlsx
 .agents/
 skills-lock.json
-10122219_AbrielFataSaptaji_Skripsi.pdf
 kepswell-backend/uploads/
+*.pdf
+kepswell-backend/src/db/scripts/
