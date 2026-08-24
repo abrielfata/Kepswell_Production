@@ -17,6 +17,19 @@ export interface Host {
     updated_at: string;
 }
 
+export interface Schedule {
+    id?: number;
+    host_id: number;
+    schedule_date: string;
+    slot_index: number;
+    host_name?: string;
+}
+
+export interface TimeSlot {
+    index: number;
+    label: string;
+}
+
 export interface Report {
     id: number;
     host_id: number;
@@ -26,6 +39,7 @@ export interface Report {
     live_duration_minutes: number;
     screenshot_url: string | null;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    schedule_status?: 'MATCH' | 'NO_SCHEDULE' | null;
     month: number;
     year: number;
     live_date: string | null;

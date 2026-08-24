@@ -5,7 +5,7 @@ import {
     Toolbar, IconButton
 } from '@mui/material';
 import {
-    GridView, AssignmentOutlined, PeopleOutlined,
+    GridView, AssignmentOutlined, PeopleOutlined, CalendarMonthOutlined,
     Menu as MenuIcon, LogoutOutlined
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -16,6 +16,7 @@ const DRAWER_WIDTH = 224;
 const navItems = [
     { label: 'Dashboard', path: '/',        icon: <GridView sx={{ fontSize: 18 }} /> },
     { label: 'Laporan',   path: '/reports', icon: <AssignmentOutlined sx={{ fontSize: 18 }} /> },
+    { label: 'Jadwal',    path: '/schedules', icon: <CalendarMonthOutlined sx={{ fontSize: 18 }} /> },
     { label: 'Host',      path: '/hosts',   icon: <PeopleOutlined sx={{ fontSize: 18 }} /> },
 ];
 

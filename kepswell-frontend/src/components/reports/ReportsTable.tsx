@@ -108,6 +108,9 @@ export default function ReportsTable({
                                     <TableCell>
                                         <Chip label={STATUS_LABEL[r.status] ?? r.status} size="small"
                                             color={STATUS_COLOR[r.status] ?? 'default'} />
+                                        {r.schedule_status === 'NO_SCHEDULE' && (
+                                            <Chip label="Tanpa Jadwal" size="small" color="warning" sx={{ ml: 1 }} />
+                                        )}
                                     </TableCell>
                                     <TableCell sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
                                         {r.user_name ?? <span style={{ color: '#d1d5db' }}>—</span>}

@@ -8,7 +8,9 @@ import { apiLimiter } from './middleware/securityMiddleware';
 import authRoutes from './routes/authRoutes';
 import hostRoutes from './routes/hostRoutes';
 import reportRoutes from './routes/reportRoutes';
+import scheduleRoutes from './routes/scheduleRoutes';
 import { processUpdate, setupWebhook } from './bot/telegramBot';
+import { initScheduleCron } from './bot/scheduleCron';
 
 const app = express();
 
@@ -58,6 +60,7 @@ app.get('/', (_, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/hosts', hostRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 app.post('/api/bot/webhook', (req, res) => {
   res.sendStatus(200);
@@ -81,6 +84,8 @@ app.use(errorHandler);
 app.listen(ENV.PORT, async () => {
   console.log(`🚀 Server running on port ${ENV.PORT}`);
   console.log(`📍 ENV: ${ENV.NODE_ENV}`);
+
+  initScheduleCron();
 
   const renderUrl = process.env.RENDER_EXTERNAL_URL || ENV.BACKEND_URL;
   const webhookUrl = `${renderUrl}/api/bot/webhook`;

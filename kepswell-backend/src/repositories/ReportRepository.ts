@@ -140,12 +140,13 @@ export class ReportRepository {
     live_date?: string | null;
     month: number;
     year: number;
+    schedule_status?: string | null;
   }): Promise<Report> {
     const result = await query(
       `INSERT INTO reports (
                 host_id, reported_gmv, reported_pesanan_sku, live_duration_minutes,
-                screenshot_url, ocr_raw_text, live_date, month, year
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                screenshot_url, ocr_raw_text, live_date, month, year, schedule_status
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
              RETURNING *`,
       [
         data.host_id,
@@ -157,6 +158,7 @@ export class ReportRepository {
         data.live_date || null,
         data.month,
         data.year,
+        data.schedule_status || null,
       ],
     );
     return result.rows[0];

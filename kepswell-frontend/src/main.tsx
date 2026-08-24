@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ReportsPage from './pages/ReportsPage';
 import HostsPage from './pages/HostsPage';
+import SchedulePage from './pages/SchedulePage';
 
 import './index.css';
 
@@ -141,6 +142,7 @@ function AppRoutes() {
             <Route path="/login"   element={user ? <Navigate to="/" replace /> : <LoginPage />} />
             <Route path="/"        element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+            <Route path="/schedules" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
             <Route path="/hosts"   element={<ProtectedRoute><HostsPage /></ProtectedRoute>} />
 
             <Route path="*"        element={<Navigate to="/" replace />} />
