@@ -4,7 +4,9 @@ import { v2 as cloudinary } from 'cloudinary';
 import { ENV } from '../config/env';
 import { HostService } from '../services/HostService';
 import { ReportService } from '../services/ReportService';
+import { ScheduleService } from '../services/ScheduleService';
 import { OCRService } from './ocrService';
+import { getSlotsForTime, formatDateToYYYYMMDD, TIME_SLOTS } from '../config/scheduleConstants';
 
 export interface NotifyStatusParams {
   host_id: number;
@@ -38,6 +40,7 @@ export class TelegramBot {
   private _hostService?: HostService;
   private _reportService?: ReportService;
   private _ocrService?: OCRService;
+  private _scheduleService?: ScheduleService;
 
   private get hostService() {
     if (!this._hostService) this._hostService = new HostService();
@@ -52,6 +55,11 @@ export class TelegramBot {
   private get ocrService() {
     if (!this._ocrService) this._ocrService = new OCRService();
     return this._ocrService;
+  }
+
+  private get scheduleService() {
+    if (!this._scheduleService) this._scheduleService = new ScheduleService();
+    return this._scheduleService;
   }
 
   private readonly pendingReports = new Map<string, any>();
@@ -69,7 +77,7 @@ export class TelegramBot {
     return false;
   }
 
-  private async sendMessage(chatId: number | string, text: string): Promise<void> {
+  public async sendMessage(chatId: number | string, text: string): Promise<void> {
     await axios
       .post(`${this.BASE_URL}/sendMessage`, {
         chat_id: chatId,
@@ -179,6 +187,11 @@ export class TelegramBot {
       return;
     }
 
+    if (text === '/jadwal') {
+      await this.handleJadwalCommand(chatId, telegramChatId);
+      return;
+    }
+
     if (this.pendingReports.has(telegramChatId)) {
       await this.handleReply(chatId, telegramChatId, text);
       return;
@@ -220,6 +233,7 @@ export class TelegramBot {
         live_date: pending.liveDate || null,
         month: targetMonth,
         year: targetYear,
+        schedule_status: pending.scheduleStatus || null,
       });
 
       this.pendingReports.delete(telegramChatId);
@@ -326,6 +340,34 @@ export class TelegramBot {
       return;
     }
 
+    // --- SCHEDULE VALIDATION ---
+    // Estimasi waktu mulai live
+    let liveStartTime: Date;
+    if (ocr.parsedLiveDate) {
+      liveStartTime = new Date(ocr.parsedLiveDate);
+    } else {
+      // Fallback: waktu sekarang - durasi live = perkiraan waktu MULAI
+      liveStartTime = new Date(Date.now() - (ocr.parsedDurationMinutes || 0) * 60000);
+    }
+
+    // Validasi jadwal (cek SEMUA slot yang overlap dengan toleransi)
+    const scheduleCheck = await this.scheduleService.validateHostForSlot(
+      host.id, liveStartTime
+    );
+
+    if (!scheduleCheck.valid) {
+      await this.sendMessage(chatId,
+        `⚠️ *Laporan Ditolak*\n` +
+        `Anda tidak terjadwal live pada waktu ini.\n` +
+        `(Waktu mulai live terdeteksi: ${formatLiveDate(liveStartTime)})\n\n` +
+        `Jadwal pada tanggal ${scheduleCheck.dateLabel}:\n` +
+        `${scheduleCheck.slotLabel}\n\n` +
+        `Silakan hubungi Manager jika ada perubahan jadwal.`
+      );
+      return;
+    }
+    // ---------------------------
+
     const gmvFormatted = new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
@@ -363,6 +405,7 @@ export class TelegramBot {
       rawText: ocr.rawText,
       liveDate: ocr.parsedLiveDate,
       screenshotUrl,
+      scheduleStatus: scheduleCheck.status, // MATCH or NO_SCHEDULE
     });
 
     const liveDateText = formatLiveDate(ocr.parsedLiveDate);
@@ -417,6 +460,61 @@ export class TelegramBot {
     }
   }
 
+  private async handleJadwalCommand(chatId: string, telegramChatId: string) {
+    const host = await this.hostService.getHostByTelegramId(telegramChatId);
+    if (!host) {
+      await this.sendMessage(chatId, '❌ Anda belum terdaftar sebagai host.');
+      return;
+    }
+
+    try {
+      const d = new Date();
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const weekStartStr = formatDateToYYYYMMDD(monday);
+      const weekEndStr = formatDateToYYYYMMDD(sunday);
+
+      const schedules = await this.scheduleService.getWeekSchedule(weekStartStr);
+      
+      const hostSchedules = schedules.filter(s => s.host_id === host.id);
+      
+      let msg = `📅 *Jadwal Live Anda Minggu Ini*\n(${weekStartStr} s.d. ${weekEndStr})\n\n`;
+      
+      const scheduleByDate = new Map<string, number[]>();
+      hostSchedules.forEach(s => {
+        const dStr = typeof s.schedule_date === 'string' ? s.schedule_date : formatDateToYYYYMMDD(s.schedule_date as Date);
+        if (!scheduleByDate.has(dStr)) scheduleByDate.set(dStr, []);
+        scheduleByDate.get(dStr)!.push(s.slot_index);
+      });
+
+      for (let i = 0; i < 7; i++) {
+        const curDate = new Date(monday);
+        curDate.setDate(monday.getDate() + i);
+        const curDateStr = formatDateToYYYYMMDD(curDate);
+        const dayName = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'][i];
+        
+        msg += `• *${dayName}*: `;
+        const slots = scheduleByDate.get(curDateStr);
+        if (slots && slots.length > 0) {
+          slots.sort();
+          msg += slots.map(s => TIME_SLOTS[s].label.split(' ')[1].replace(/[()]/g, '')).join(', ');
+        } else {
+          msg += '—';
+        }
+        msg += '\n';
+      }
+
+      await this.sendMessage(chatId, msg);
+    } catch (e) {
+      console.error(e);
+      await this.sendMessage(chatId, '❌ Gagal mengambil jadwal.');
+    }
+  }
+
   async setupWebhook(webhookUrl: string): Promise<void> {
     const res = await axios.post(`${this.BASE_URL}/setWebhook`, {
       url: webhookUrl,
@@ -432,4 +530,5 @@ export const processUpdate = (update: any) => telegramBot.processUpdate(update);
 export const notifyHostStatusUpdate = (params: NotifyStatusParams) =>
   telegramBot.notifyHostStatusUpdate(params);
 export const setupWebhook = (url: string) => telegramBot.setupWebhook(url);
+export const sendMessage = (chatId: string | number, text: string) => telegramBot.sendMessage(chatId, text);
 

@@ -22,6 +22,16 @@ export interface Host {
   updated_at: Date;
 }
 
+export interface Schedule {
+  id: number;
+  host_id: number;
+  schedule_date: Date | string;
+  slot_index: number;
+  created_at: Date;
+  updated_at: Date;
+  host_name?: string; // Optional for joins
+}
+
 export interface Report {
   id: number;
   host_id: number;
@@ -32,6 +42,7 @@ export interface Report {
   ocr_raw_text: string | null;
   live_date?: Date | string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  schedule_status?: 'MATCH' | 'NO_SCHEDULE' | null;
   month: number;
   year: number;
   user_id: number | null;

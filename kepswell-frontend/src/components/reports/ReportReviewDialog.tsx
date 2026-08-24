@@ -59,6 +59,10 @@ export default function ReportReviewDialog({ report, onClose, onVerify, isPendin
                         { label: 'Pesanan', value: `${report.reported_pesanan_sku || 0} SKU` },
                         { label: 'Durasi', value: formatDuration(report.live_duration_minutes || 0) },
                         { label: 'Waktu', value: formatLiveDate(report.live_date) },
+                        { label: 'Jadwal', value: report.schedule_status === 'NO_SCHEDULE' ? 
+                            <span style={{ color: '#d97706', fontWeight: 600 }}>⚠️ Tanpa Jadwal</span> : 
+                            <span style={{ color: '#16a34a' }}>✅ Sesuai Jadwal</span> 
+                        },
                     ].map(row => (
                         <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography sx={{ fontSize: '0.8rem', color: '#6b7280' }}>{row.label}</Typography>
