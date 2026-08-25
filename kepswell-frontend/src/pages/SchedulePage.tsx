@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { 
-  Box, Typography, Button, IconButton, Paper, 
+import {
+  Box, Typography, Button, IconButton, Paper,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Select, MenuItem, FormControl, Chip, CircularProgress, Tooltip
+  Select, MenuItem, FormControl, Chip, CircularProgress
 } from '@mui/material';
-import { 
-  ChevronLeft, ChevronRight, Save, ContentCopy
+import {
+  ChevronLeft, ChevronRight, Save
 } from '@mui/icons-material';
 import { useWeekSchedule, useSaveWeekSchedule } from '../hooks/useSchedules';
 import { useHosts } from '../hooks/useHosts';
@@ -40,11 +40,11 @@ function getMonday(d: Date) {
 export default function SchedulePage() {
   const [currentWeekMonday, setCurrentWeekMonday] = useState(getMonday(new Date()));
   const weekStartDateStr = formatDateToYYYYMMDD(currentWeekMonday);
-  
+
   const { data: schedules = [], isLoading: loadingSchedules } = useWeekSchedule(weekStartDateStr);
   const { hosts: allHosts } = useHosts();
   const hosts = useMemo(() => allHosts.filter(h => h.is_active), [allHosts]);
-  
+
   const { mutate: saveSchedule, isPending: saving } = useSaveWeekSchedule();
   const { showNotification } = useNotification();
 
@@ -75,14 +75,6 @@ export default function SchedulePage() {
     const d = new Date(currentWeekMonday);
     d.setDate(d.getDate() + 7);
     setCurrentWeekMonday(d);
-  };
-
-  const handleCopyFromPrevWeek = () => {
-    const prevWeekD = new Date(currentWeekMonday);
-    prevWeekD.setDate(prevWeekD.getDate() - 7);
-    // Kita biarkan user simpan jadwal ini dengan cara click 'Save'
-    // But ideally we'd fetch prev week's schedule here. For simplicity:
-    showNotification('Silakan navigasi ke minggu sebelumnya, lalu Salin ke Minggu Depan.', 'info');
   };
 
   const handleChange = (dateStr: string, slotIndex: number, hostIds: number[]) => {
@@ -133,8 +125,8 @@ export default function SchedulePage() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
             onClick={handleSave}
             disabled={saving || loadingSchedules}
@@ -152,11 +144,6 @@ export default function SchedulePage() {
           </Typography>
           <IconButton onClick={handleNextWeek}><ChevronRight /></IconButton>
         </Box>
-        <Tooltip title="Belum diimplementasi penuh, silakan atur manual sementara.">
-          <Button startIcon={<ContentCopy />} variant="outlined" onClick={handleCopyFromPrevWeek}>
-            Salin dari Minggu Lalu
-          </Button>
-        </Tooltip>
       </Box>
 
       <TableContainer component={Paper} sx={{ borderRadius: 3, border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)', overflow: 'hidden' }}>
@@ -165,7 +152,7 @@ export default function SchedulePage() {
             <TableRow>
               <TableCell sx={{ width: 120, bgcolor: '#ffffff', borderBottom: '1px solid #f1f5f9' }}></TableCell>
               {weekDays.map((d, i) => (
-                <TableCell key={i} align="center" sx={{ bgcolor: '#ffffff', width: `${100/7}%`, py: 2, borderBottom: '1px solid #f1f5f9' }}>
+                <TableCell key={i} align="center" sx={{ bgcolor: '#ffffff', width: `${100 / 7}%`, py: 2, borderBottom: '1px solid #f1f5f9' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#334155' }}>{DAY_NAMES[i]}</Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 500 }}>
                     {d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
@@ -216,15 +203,15 @@ export default function SchedulePage() {
                                 </Box>
                               );
                             }}
-                              sx={{
-                                '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                '&:hover': { bgcolor: selectedHostIds.length > 0 ? '#e0e7ff' : '#f1f5f9' },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: '1px solid #3b82f6' },
-                                bgcolor: selectedHostIds.length > 0 ? '#eff6ff' : '#f8fafc',
-                                borderRadius: 2,
-                                minHeight: 44,
-                                transition: 'background-color 0.2s ease'
-                              }}
+                            sx={{
+                              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                              '&:hover': { bgcolor: selectedHostIds.length > 0 ? '#e0e7ff' : '#f1f5f9' },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: '1px solid #3b82f6' },
+                              bgcolor: selectedHostIds.length > 0 ? '#eff6ff' : '#f8fafc',
+                              borderRadius: 2,
+                              minHeight: 44,
+                              transition: 'background-color 0.2s ease'
+                            }}
                           >
                             {hosts.map((h) => (
                               <MenuItem key={h.id} value={h.id}>
