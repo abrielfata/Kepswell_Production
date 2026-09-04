@@ -1,7 +1,7 @@
 import api from './axios';
 import type { Schedule } from '../types';
 
-export const getWeekSchedule = async (weekStartDate?: string): Promise<Schedule[]> => {
+export const fetchWeeklySchedule = async (weekStartDate?: string): Promise<Schedule[]> => {
     let url = '/schedules';
     if (weekStartDate) {
         url += `?week=${weekStartDate}`;
@@ -10,7 +10,7 @@ export const getWeekSchedule = async (weekStartDate?: string): Promise<Schedule[
     return response.data.data;
 };
 
-export const saveWeekSchedule = async (
+export const postWeeklySchedule = async (
     weekStartDate: string,
     entries: { schedule_date: string; slot_index: number; host_id: number }[]
 ): Promise<void> => {

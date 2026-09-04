@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getWeekSchedule, saveWeekSchedule } from '../api/schedules';
+import { fetchWeeklySchedule, postWeeklySchedule } from '../api/schedules';
 
 export const useWeekSchedule = (weekStartDate: string) => {
     return useQuery({
         queryKey: ['schedules', weekStartDate],
-        queryFn: () => getWeekSchedule(weekStartDate),
+        queryFn: () => fetchWeeklySchedule(weekStartDate),
     });
 };
 
@@ -13,7 +13,7 @@ export const useSaveWeekSchedule = () => {
     
     return useMutation({
         mutationFn: (data: { weekStartDate: string; entries: any[] }) => 
-            saveWeekSchedule(data.weekStartDate, data.entries),
+            postWeeklySchedule(data.weekStartDate, data.entries),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['schedules', variables.weekStartDate] });
         },

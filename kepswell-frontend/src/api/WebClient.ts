@@ -305,4 +305,39 @@ export class WebClient {
             this.handleError(err.message || "Gagal mengekspor data laporan");
         }
     }
+    public handleSaveScheduleSuccess() {
+        this.showNotification("Jadwal berhasil disimpan!", "success");
+    }
+
+    public handleSaveScheduleError(err: any) {
+        const msg = err.response?.data?.message || err.message || "Gagal menyimpan jadwal";
+        this.setError(msg);
+        this.showNotification(msg, "error");
+    }
+
+    public async handleSaveSchedule(
+        weekStartDateStr: string,
+        gridState: Record<string, number[]>,
+        saveScheduleFn: (data: { weekStartDate: string; entries: any[] }) => Promise<any>
+    ) {
+        const entries: { schedule_date: string; slot_index: number; host_id: number }[] = [];
+        Object.entries(gridState).forEach(([key, hostIds]) => {
+            const [dateStr, slotIndexStr] = key.split('_');
+            hostIds.forEach(hostId => {
+                entries.push({
+                    schedule_date: dateStr,
+                    slot_index: parseInt(slotIndexStr, 10),
+                    host_id: hostId
+                });
+            });
+        });
+
+        try {
+            const res = await saveScheduleFn({ weekStartDate: weekStartDateStr, entries });
+            this.handleSaveScheduleSuccess();
+            return res;
+        } catch (err: any) {
+            this.handleSaveScheduleError(err);
+        }
+    }
 }

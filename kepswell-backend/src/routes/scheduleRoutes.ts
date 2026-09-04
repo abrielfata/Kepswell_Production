@@ -8,7 +8,7 @@ const scheduleController = new ScheduleController();
 // Semua rute schedule butuh auth dan akses MANAGER
 router.use(authenticate, authorizeManager);
 
-router.get('/', scheduleController.getWeekSchedule);
-router.put('/', scheduleController.saveWeekSchedule);
+router.get('/', scheduleController.handleGetSchedule);
+router.put('/', scheduleController.handleSaveSchedule);
 
 export default router;
