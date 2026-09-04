@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { WebClient } from '../api/WebClient';
 import {
   Box, Typography, Button, IconButton, Paper,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -45,8 +47,17 @@ export default function SchedulePage() {
   const { hosts: allHosts } = useHosts();
   const hosts = useMemo(() => allHosts.filter(h => h.is_active), [allHosts]);
 
-  const { mutate: saveSchedule, isPending: saving } = useSaveWeekSchedule();
+  const { mutateAsync: saveScheduleAsync, isPending: saving } = useSaveWeekSchedule();
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
+  const [, setError] = useState<string | null>(null);
+
+  const webClient = useMemo(() => new WebClient(
+    navigate,
+    showNotification,
+    undefined,
+    (msg) => setError(msg)
+  ), [navigate, showNotification]);
 
   // Local state for edits
   // Map of `${dateStr}_${slotIndex}` to array of host_ids
@@ -82,23 +93,8 @@ export default function SchedulePage() {
     setGridState(prev => ({ ...prev, [key]: hostIds }));
   };
 
-  const handleSave = () => {
-    const entries: { schedule_date: string; slot_index: number; host_id: number }[] = [];
-    Object.entries(gridState).forEach(([key, hostIds]) => {
-      const [dateStr, slotIndexStr] = key.split('_');
-      hostIds.forEach(hostId => {
-        entries.push({
-          schedule_date: dateStr,
-          slot_index: parseInt(slotIndexStr, 10),
-          host_id: hostId
-        });
-      });
-    });
-
-    saveSchedule({ weekStartDate: weekStartDateStr, entries }, {
-      onSuccess: () => showNotification('Jadwal berhasil disimpan!', 'success'),
-      onError: (err: any) => showNotification(err.response?.data?.message || 'Gagal menyimpan jadwal', 'error')
-    });
+  const handleSave = async () => {
+    await webClient.handleSaveSchedule(weekStartDateStr, gridState, saveScheduleAsync);
   };
 
   const generateDaysArray = () => {

@@ -8,7 +8,7 @@ export class ScheduleService {
   /**
    * Mengambil jadwal untuk 1 minggu (7 hari) berdasarkan tanggal awal (Senin)
    */
-  async getWeekSchedule(weekStartDate: string): Promise<Schedule[]> {
+  async retrieveWeekSchedule(weekStartDate: string): Promise<Schedule[]> {
     // Pastikan weekStartDate adalah hari Senin
     const start = new Date(weekStartDate);
     const end = new Date(start);
@@ -24,7 +24,7 @@ export class ScheduleService {
    * Menyimpan jadwal untuk 1 minggu. Menghapus jadwal lama di minggu tersebut
    * dan menggantinya dengan yang baru.
    */
-  async saveWeekSchedule(
+  async processAndSaveSchedule(
     weekStartDate: string, 
     entries: { schedule_date: string; slot_index: number; host_id: number }[]
   ): Promise<void> {

@@ -478,7 +478,7 @@ export class TelegramBot {
       const weekStartStr = formatDateToYYYYMMDD(monday);
       const weekEndStr = formatDateToYYYYMMDD(sunday);
 
-      const schedules = await this.scheduleService.getWeekSchedule(weekStartStr);
+      const schedules = await this.scheduleService.retrieveWeekSchedule(weekStartStr);
       
       const hostSchedules = schedules.filter(s => s.host_id === host.id);
       

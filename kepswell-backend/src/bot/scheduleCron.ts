@@ -11,21 +11,23 @@ const hostRepo = new HostRepository();
  * Inisialisasi cron job harian
  */
 export const initScheduleCron = () => {
-  // Berjalan setiap hari pada jam 06:00 WIB
-  cron.schedule('0 6 * * *', async () => {
-    console.log('⏰ Menjalankan cron job notifikasi jadwal harian...');
+  // Berjalan setiap hari pada jam 18:00 WIB (Pengingat H-1)
+  cron.schedule('0 18 * * *', async () => {
+    console.log('⏰ Menjalankan cron job notifikasi jadwal H-1 (Besok)...');
     
     try {
-      const today = new Date();
-      const dateStr = formatDateToYYYYMMDD(today);
-      const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + 1); // Cek jadwal untuk besok
       
-      // Ambil jadwal hari ini untuk semua slot (0-5)
+      const dateStr = formatDateToYYYYMMDD(targetDate);
+      const dateLabel = targetDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+      
+      // Ambil jadwal besok untuk semua slot (0-5)
       const slotIndexes = [0, 1, 2, 3, 4, 5];
       const schedules = await scheduleRepo.findByDateAndSlots(dateStr, slotIndexes);
       
       if (schedules.length === 0) {
-        console.log('ℹ️ Tidak ada jadwal hari ini.');
+        console.log('ℹ️ Tidak ada jadwal untuk besok.');
         return;
       }
       
@@ -57,10 +59,10 @@ export const initScheduleCron = () => {
             }
           }
           
-          const message = `📅 *Jadwal Live Hari Ini* (${dateLabel})\n\n` +
-                          `Halo ${host.full_name}, berikut slot Anda hari ini:\n` +
+          const message = `📅 *Pengingat Jadwal Live Besok* (${dateLabel})\n\n` +
+                          `Halo ${host.full_name}, berikut jadwal siaran Anda untuk besok:\n` +
                           `${slotText}\n` +
-                          `Selamat live! Kirimkan screenshot laporan setelah sesi selesai.`;
+                          `Jangan lupa persiapkan diri! Kirimkan screenshot laporan setelah sesi selesai.`;
                           
           await sendMessage(host.telegram_chat_id, message);
         }
